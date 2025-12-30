@@ -74,20 +74,41 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-60">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                Funcionários
-              </CardTitle>
-              <CardDescription>
-                Gerencie sua equipe
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">Em breve</p>
-            </CardContent>
-          </Card>
+          {user?.role === "ADMIN" ? (
+            <Link href="/colaboradores">
+              <Card className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-primary" />
+                    Colaboradores
+                  </CardTitle>
+                  <CardDescription>
+                    Gerencie sua equipe
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full hover:cursor-pointer">
+                    Acessar <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </Link>
+          ) : (
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-60">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  Funcionários
+                </CardTitle>
+                <CardDescription>
+                  Gerencie sua equipe
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">Apenas para administradores</p>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-60">
             <CardHeader>

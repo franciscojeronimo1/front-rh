@@ -139,17 +139,58 @@ export async function stopTimeRecord(): Promise<StopTimeRecordResponse> {
   return response.json()
 }
 
-// Obter registros do dia
-export async function getTimeRecords(date?: string): Promise<TimeRecordsResponse> {
-  const params = date ? `?date=${date}` : ""
-  const response = await authenticatedFetch(`/time-records${params}`)
+
+export async function getTimeRecords(date?: string, userId?: string): Promise<TimeRecordsResponse> {
+  const params = new URLSearchParams()
+
+  if (date) {
+    const formattedDate = date.includes("T") ? date.split("T")[0] : date
+    const cleanDate = formattedDate.split("+")[0].split("Z")[0]
+    params.append("date", cleanDate)
+  }
+  if (userId) params.append("userId", userId)
+  const queryString = params.toString() ? `?${params.toString()}` : ""
+  const response = await authenticatedFetch(`/time-records${queryString}`)
+  const data = await response.json()
+  return data
+}
+
+export async function getTimeSummary(date?: string, userId?: string): Promise<{ summary: TimeSummary }> {
+  const params = new URLSearchParams()
+  if (date) {
+    const formattedDate = date.includes("T") ? date.split("T")[0] : date
+    const cleanDate = formattedDate.split("+")[0].split("Z")[0]
+    params.append("date", cleanDate)
+  }
+  if (userId) params.append("userId", userId)
+  const queryString = params.toString() ? `?${params.toString()}` : ""
+  const response = await authenticatedFetch(`/time-records/summary${queryString}`)
+  const data = await response.json()
+  return data
+}
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: "ADMIN" | "STAFF"
+  createdById: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface UsersResponse {
+  users: User[]
+}
+
+export async function getUsers(): Promise<UsersResponse> {
+  const response = await authenticatedFetch("/users")
   return response.json()
 }
 
-// Obter resumo do dia
-export async function getTimeSummary(date?: string): Promise<{ summary: TimeSummary }> {
-  const params = date ? `?date=${date}` : ""
-  const response = await authenticatedFetch(`/time-records/summary${params}`)
+
+export async function getUserById(id: string): Promise<{ user: User }> {
+  const response = await authenticatedFetch(`/users/${id}`)
   return response.json()
 }
 

@@ -66,7 +66,7 @@ export default function PontoPage() {
       setIsLoadingData(true)
       const [summaryData, recordsData] = await Promise.all([
         getTimeSummary(),
-        getTimeRecords(),
+        getTimeRecords(undefined, undefined),
       ])
       setSummary(summaryData.summary)
       setRecords(recordsData.records)
