@@ -1,17 +1,39 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Building2, Users, Clock, Package, ArrowRight, LogOut } from "lucide-react"
 
+interface User {
+  id: string
+  name: string
+  email: string
+  role: "ADMIN" | "STAFF"
+}
+
 export default function Dashboard() {
   const router = useRouter()
+  // Função inicializadora que só executa no cliente
+  const [user] = useState<User | null>(() => {
+    if (typeof window === "undefined") return null
+    try {
+      const userData = localStorage.getItem("user")
+      return userData ? (JSON.parse(userData) as User) : null
+    } catch {
+      return null
+    }
+  })
+  const [isLoading] = useState(() => {
+    if (typeof window === "undefined") return true
+    const token = localStorage.getItem("token")
+    return !token
+  })
 
   useEffect(() => {
-    // Verificar se há token
+    // Verificar se há token e redirecionar se necessário
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token")
       if (!token) {
@@ -20,16 +42,25 @@ export default function Dashboard() {
     }
   }, [router])
 
-  const user = typeof window !== "undefined" 
-    ? JSON.parse(localStorage.getItem("user") || "{}")
-    : null
-
   const handleLogout = () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("token")
       localStorage.removeItem("user")
       router.push("/login")
     }
+  }
+
+  // Mostrar loading ou nada enquanto carrega
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Carregando...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -110,20 +141,24 @@ export default function Dashboard() {
             </Card>
           )}
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-60">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="w-5 h-5 text-primary" />
-                Estoque
-              </CardTitle>
-              <CardDescription>
-                Controle de inventário
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">Em breve</p>
-            </CardContent>
-          </Card>
+          <Link href="/estoque">
+            <Card className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="w-5 h-5 text-primary" />
+                  Estoque
+                </CardTitle>
+                <CardDescription>
+                  Controle de inventário
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full hover:cursor-pointer">
+                  Acessar <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+          </Link>
 
           <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-60">
             <CardHeader>

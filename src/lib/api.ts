@@ -194,3 +194,339 @@ export async function getUserById(id: string): Promise<{ user: User }> {
   return response.json()
 }
 
+// ========== SISTEMA DE ESTOQUE ==========
+
+// Produtos
+export interface Product {
+  id: string
+  name: string
+  code?: string | null
+  sku?: string | null
+  category?: string | null
+  currentStock: number
+  minStock: number
+  unit: string
+  costPrice?: string | null
+  averageCost?: string | null
+  active: boolean
+  organizationId: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateProductRequest {
+  name: string
+  code?: string
+  sku?: string
+  category?: string
+  minStock?: number
+  unit?: string
+  costPrice?: number
+}
+
+export interface UpdateProductRequest {
+  name?: string
+  code?: string
+  sku?: string
+  category?: string
+  minStock?: number
+  unit?: string
+  costPrice?: number
+  active?: boolean
+}
+
+export interface ProductsResponse {
+  products: Product[]
+}
+
+export interface ProductResponse {
+  product: Product
+}
+
+export interface CreateProductResponse {
+  message: string
+  product: Product
+}
+
+export interface UpdateProductResponse {
+  message: string
+  product: Product
+}
+
+export interface DeleteProductResponse {
+  message: string
+}
+
+export async function getProducts(category?: string, active?: boolean): Promise<ProductsResponse> {
+  const params = new URLSearchParams()
+  if (category) params.append("category", category)
+  if (active !== undefined) params.append("active", active.toString())
+  const queryString = params.toString() ? `?${params.toString()}` : ""
+  const response = await authenticatedFetch(`/products${queryString}`)
+  return response.json()
+}
+
+export async function getProductById(id: string): Promise<ProductResponse> {
+  const response = await authenticatedFetch(`/products/${id}`)
+  return response.json()
+}
+
+
+export async function createProduct(data: CreateProductRequest): Promise<CreateProductResponse> {
+  const response = await authenticatedFetch("/products", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+  return response.json()
+}
+
+export async function updateProduct(id: string, data: UpdateProductRequest): Promise<UpdateProductResponse> {
+  const response = await authenticatedFetch(`/products/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  })
+  return response.json()
+}
+
+export async function deleteProduct(id: string): Promise<DeleteProductResponse> {
+  const response = await authenticatedFetch(`/products/${id}`, {
+    method: "DELETE",
+  })
+  return response.json()
+}
+
+export interface StockEntry {
+  id: string
+  productId: string
+  quantity: number
+  unitPrice: string
+  totalPrice: string
+  supplierName?: string | null
+  supplierDoc?: string | null
+  invoiceNumber?: string | null
+  notes?: string | null
+  product: {
+    id: string
+    name: string
+    currentStock: number
+  }
+  user: {
+    id: string
+    name: string
+  }
+  createdAt: string
+}
+
+export interface CreateStockEntryRequest {
+  productId: string
+  quantity: number
+  unitPrice: number
+  supplierName?: string
+  supplierDoc?: string
+  invoiceNumber?: string
+  notes?: string
+}
+
+export interface CreateStockEntryResponse {
+  message: string
+  entry: StockEntry
+}
+
+export interface StockEntriesResponse {
+  entries: StockEntry[]
+}
+
+
+export async function createStockEntry(data: CreateStockEntryRequest): Promise<CreateStockEntryResponse> {
+  const response = await authenticatedFetch("/stock/entries", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+  return response.json()
+}
+
+
+export async function getStockEntries(
+  productId?: string,
+  startDate?: string,
+  endDate?: string
+): Promise<StockEntriesResponse> {
+  const params = new URLSearchParams()
+  if (productId) params.append("productId", productId)
+  if (startDate) params.append("startDate", startDate)
+  if (endDate) params.append("endDate", endDate)
+  const queryString = params.toString() ? `?${params.toString()}` : ""
+  const response = await authenticatedFetch(`/stock/entries${queryString}`)
+  return response.json()
+}
+
+export interface StockExit {
+  id: string
+  productId: string
+  quantity: number
+  projectName?: string | null
+  clientName?: string | null
+  serviceType?: string | null
+  notes?: string | null
+  product: {
+    id: string
+    name: string
+    currentStock: number
+  }
+  user: {
+    id: string
+    name: string
+  }
+  createdAt: string
+}
+
+export interface CreateStockExitRequest {
+  productId: string
+  quantity: number
+  projectName?: string
+  clientName?: string
+  serviceType?: string
+  notes?: string
+}
+
+export interface CreateStockExitResponse {
+  message: string
+  exit: StockExit
+}
+
+export interface StockExitsResponse {
+  exits: StockExit[]
+}
+
+
+export async function createStockExit(data: CreateStockExitRequest): Promise<CreateStockExitResponse> {
+  const response = await authenticatedFetch("/stock/exits", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+  return response.json()
+}
+
+
+export async function getStockExits(
+  productId?: string,
+  startDate?: string,
+  endDate?: string
+): Promise<StockExitsResponse> {
+  const params = new URLSearchParams()
+  if (productId) params.append("productId", productId)
+  if (startDate) params.append("startDate", startDate)
+  if (endDate) params.append("endDate", endDate)
+  const queryString = params.toString() ? `?${params.toString()}` : ""
+  const response = await authenticatedFetch(`/stock/exits${queryString}`)
+  return response.json()
+}
+
+export interface CurrentStockProduct {
+  id: string
+  name: string
+  code?: string | null
+  category?: string | null
+  currentStock: number
+  minStock: number
+  unit: string
+  averageCost?: string | null
+  totalValue?: string | null
+}
+
+export interface CurrentStockResponse {
+  products: CurrentStockProduct[]
+}
+
+export interface LowStockProduct extends CurrentStockProduct {
+  deficit: number
+}
+
+export interface LowStockResponse {
+  products: LowStockProduct[]
+}
+
+export interface DailyUsageProduct {
+  product: {
+    id: string
+    name: string
+    unit: string
+  }
+  totalQuantity: number
+  exits: Array<{
+    id: string
+    quantity: number
+    projectName?: string | null
+    clientName?: string | null
+    serviceType?: string | null
+    notes?: string | null
+    createdAt: string
+  }>
+}
+
+export interface DailyUsageResponse {
+  date: string
+  products: DailyUsageProduct[]
+  totalExits: number
+}
+
+export interface WeeklyUsageItem {
+  productId: string
+  productName: string
+  quantity: number
+  unit: string
+}
+
+export interface WeeklyUsageResponse {
+  startDate: string
+  endDate: string
+  usage: WeeklyUsageItem[]
+  totalItems: number
+  totalQuantity: number
+}
+
+export interface TotalValueResponse {
+  totalValue: string
+  totalProducts: number
+  productsWithStock: number
+}
+
+export async function getCurrentStock(category?: string): Promise<CurrentStockResponse> {
+  const params = new URLSearchParams()
+  if (category) params.append("category", category)
+  const queryString = params.toString() ? `?${params.toString()}` : ""
+  const response = await authenticatedFetch(`/stock/current${queryString}`)
+  return response.json()
+}
+
+export async function getLowStock(): Promise<LowStockResponse> {
+  const response = await authenticatedFetch("/stock/low-stock")
+  return response.json()
+}
+export async function getDailyUsage(date?: string): Promise<DailyUsageResponse> {
+  const params = new URLSearchParams()
+  if (date) {
+    const formattedDate = date.includes("T") ? date.split("T")[0] : date
+    params.append("date", formattedDate)
+  }
+  const queryString = params.toString() ? `?${params.toString()}` : ""
+  const response = await authenticatedFetch(`/stock/daily-usage${queryString}`)
+  return response.json()
+}
+
+export async function getWeeklyUsage(startDate?: string): Promise<WeeklyUsageResponse> {
+  const params = new URLSearchParams()
+  if (startDate) {
+    const formattedDate = startDate.includes("T") ? startDate.split("T")[0] : startDate
+    params.append("startDate", formattedDate)
+  }
+  const queryString = params.toString() ? `?${params.toString()}` : ""
+  const response = await authenticatedFetch(`/stock/weekly-usage${queryString}`)
+  return response.json()
+}
+
+export async function getTotalValue(): Promise<TotalValueResponse> {
+  const response = await authenticatedFetch("/stock/total-value")
+  return response.json()
+}
+

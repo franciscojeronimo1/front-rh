@@ -36,7 +36,6 @@ export default function ColaboradoresPage() {
   const [users, setUsers] = useState<User[]>([])
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = format(new Date(), "yyyy-MM-dd")
-    console.log("Data inicial selecionada:", today)
     return today
   })
   const [isLoading, setIsLoading] = useState(true)
