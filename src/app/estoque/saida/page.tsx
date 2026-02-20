@@ -71,7 +71,7 @@ export default function RegistrarSaidaPage() {
     const loadProducts = async () => {
       try {
         setIsLoadingProducts(true)
-        const response = await getProducts(undefined, true)
+        const response = await getProducts({ active: true, limit: 100 })
         setProducts(response.products.filter((p) => p.currentStock > 0))
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erro ao carregar produtos")

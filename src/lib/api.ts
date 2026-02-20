@@ -235,8 +235,18 @@ export interface UpdateProductRequest {
   active?: boolean
 }
 
+export interface PaginationInfo {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  hasNext: boolean
+  hasPrev: boolean
+}
+
 export interface ProductsResponse {
   products: Product[]
+  pagination: PaginationInfo
 }
 
 export interface ProductResponse {
@@ -257,11 +267,20 @@ export interface DeleteProductResponse {
   message: string
 }
 
-export async function getProducts(category?: string, active?: boolean): Promise<ProductsResponse> {
-  const params = new URLSearchParams()
-  if (category) params.append("category", category)
-  if (active !== undefined) params.append("active", active.toString())
-  const queryString = params.toString() ? `?${params.toString()}` : ""
+export interface GetProductsParams {
+  category?: string
+  active?: boolean
+  page?: number
+  limit?: number
+}
+
+export async function getProducts(params?: GetProductsParams): Promise<ProductsResponse> {
+  const searchParams = new URLSearchParams()
+  if (params?.category) searchParams.append("category", params.category)
+  if (params?.active !== undefined) searchParams.append("active", params.active.toString())
+  if (params?.page !== undefined) searchParams.append("page", params.page.toString())
+  if (params?.limit !== undefined) searchParams.append("limit", params.limit.toString())
+  const queryString = searchParams.toString() ? `?${searchParams.toString()}` : ""
   const response = await authenticatedFetch(`/products${queryString}`)
   return response.json()
 }

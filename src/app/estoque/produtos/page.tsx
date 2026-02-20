@@ -36,38 +36,49 @@ import {
   AlertTriangle,
   Loader2,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import {
   getProducts,
   deleteProduct,
   type Product,
-  type ProductsResponse,
+  type PaginationInfo,
 } from "@/lib/api"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+
+const LIMIT_OPTIONS = [10, 20, 30] as const
 
 export default function ProdutosPage() {
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [activeFilter, setActiveFilter] = useState<string>("all")
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState<number>(10)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [pageInputValue, setPageInputValue] = useState("")
 
   const loadProducts = async () => {
     try {
       setIsLoading(true)
       setError("")
       const active = activeFilter === "all" ? undefined : activeFilter === "true"
-      const response: ProductsResponse = await getProducts(
-        categoryFilter === "all" ? undefined : categoryFilter,
-        active
-      )
+      const response = await getProducts({
+        category: categoryFilter === "all" ? undefined : categoryFilter,
+        active,
+        page,
+        limit,
+      })
       setProducts(response.products)
+      setPagination(response.pagination)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar produtos")
     } finally {
@@ -77,7 +88,45 @@ export default function ProdutosPage() {
 
   useEffect(() => {
     loadProducts()
-  }, [categoryFilter, activeFilter])
+  }, [categoryFilter, activeFilter, page, limit])
+
+  useEffect(() => {
+    if (!isLoading && products.length === 0 && pagination && pagination.page > 1) {
+      setPage(1)
+    }
+  }, [isLoading, products.length, pagination])
+
+  useEffect(() => {
+    if (pagination) {
+      setPageInputValue(pagination.page.toString())
+    }
+  }, [pagination?.page])
+
+  const handleLimitChange = (value: string) => {
+    setLimit(Number(value))
+    setPage(1)
+  }
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value)
+    setPage(1)
+  }
+
+  const handleActiveChange = (value: string) => {
+    setActiveFilter(value)
+    setPage(1)
+  }
+
+  const goToPage = (value: string) => {
+    if (!pagination) return
+    const num = parseInt(value, 10)
+    if (isNaN(num) || num < 1 || num > pagination.totalPages) {
+      setPageInputValue(pagination.page.toString())
+      return
+    }
+    setPage(num)
+    setPageInputValue(num.toString())
+  }
 
   const handleDelete = async () => {
     if (!productToDelete) return
@@ -156,7 +205,7 @@ export default function ProdutosPage() {
             <CardDescription>Filtre produtos por categoria e status</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -166,7 +215,7 @@ export default function ProdutosPage() {
                   className="pl-9"
                 />
               </div>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <Select value={categoryFilter} onValueChange={handleCategoryChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas as categorias" />
                 </SelectTrigger>
@@ -179,7 +228,7 @@ export default function ProdutosPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={activeFilter} onValueChange={setActiveFilter}>
+              <Select value={activeFilter} onValueChange={handleActiveChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
@@ -187,6 +236,18 @@ export default function ProdutosPage() {
                   <SelectItem value="all">Todos os status</SelectItem>
                   <SelectItem value="true">Ativos</SelectItem>
                   <SelectItem value="false">Inativos</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={limit.toString()} onValueChange={handleLimitChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Por página" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LIMIT_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt.toString()}>
+                      {opt} por página
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -197,12 +258,19 @@ export default function ProdutosPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Lista de Produtos ({filteredProducts.length})
+              Lista de Produtos
+              {pagination ? (
+                <> ({pagination.total} {pagination.total === 1 ? "produto" : "produtos"})</>
+              ) : (
+                ` (${filteredProducts.length})`
+              )}
             </CardTitle>
             <CardDescription>
               {filteredProducts.length === 0
                 ? "Nenhum produto encontrado"
-                : `${filteredProducts.length} produto(s) encontrado(s)`}
+                : pagination
+                  ? `Mostrando ${((pagination.page - 1) * pagination.limit) + 1}-${Math.min(pagination.page * pagination.limit, pagination.total)} de ${pagination.total}`
+                  : `${filteredProducts.length} produto(s) na página`}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -305,6 +373,48 @@ export default function ProdutosPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+            )}
+
+            {/* Paginação */}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Página</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={pagination.totalPages}
+                    value={pageInputValue || pagination.page}
+                    onChange={(e) => setPageInputValue(e.target.value)}
+                    onBlur={() => goToPage(pageInputValue || pagination.page.toString())}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") goToPage(pageInputValue || pagination.page.toString())
+                    }}
+                    className="w-14 h-8 text-center px-1 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [appearance:textfield]"
+                  />
+                  <span>de {pagination.totalPages}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={!pagination.hasPrev}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                    disabled={!pagination.hasNext}
+                  >
+                    Próxima
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

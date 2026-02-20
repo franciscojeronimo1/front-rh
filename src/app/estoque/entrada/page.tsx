@@ -76,7 +76,7 @@ export default function RegistrarEntradaPage() {
     const loadProducts = async () => {
       try {
         setIsLoadingProducts(true)
-        const response = await getProducts(undefined, true)
+        const response = await getProducts({ active: true, limit: 100 })
         setProducts(response.products)
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erro ao carregar produtos")
