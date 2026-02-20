@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form"
 import { ArrowLeft, Loader2, Save } from "lucide-react"
 import { getProductById, updateProduct, type Product, type UpdateProductRequest } from "@/lib/api"
+import { CategorySelect } from "@/components/category-select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const productSchema = z.object({
@@ -220,9 +221,13 @@ export default function EditarProdutoPage() {
                     <FormItem>
                       <FormLabel>Categoria</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: Cabos" {...field} />
+                        <CategorySelect
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Selecione uma categoria"
+                        />
                       </FormControl>
-                      <FormDescription>Categoria do produto</FormDescription>
+                      <FormDescription>Categoria do produto. Clique em + para criar uma nova</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
