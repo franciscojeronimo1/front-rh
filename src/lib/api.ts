@@ -497,11 +497,12 @@ export interface CurrentStockProduct {
   minStock: number
   unit: string
   averageCost?: string | null
-  totalValue?: string | null
+  totalValue?: string | number | null
 }
 
 export interface CurrentStockResponse {
   products: CurrentStockProduct[]
+  pagination: PaginationInfo
 }
 
 export interface LowStockProduct extends CurrentStockProduct {
@@ -568,10 +569,20 @@ export interface TotalValueResponse {
   productsWithStock: number
 }
 
-export async function getCurrentStock(category?: string): Promise<CurrentStockResponse> {
-  const params = new URLSearchParams()
-  if (category) params.append("category", category)
-  const queryString = params.toString() ? `?${params.toString()}` : ""
+export interface GetCurrentStockParams {
+  category?: string
+  page?: number
+  limit?: number
+}
+
+export async function getCurrentStock(
+  params?: GetCurrentStockParams
+): Promise<CurrentStockResponse> {
+  const searchParams = new URLSearchParams()
+  if (params?.category) searchParams.append("category", params.category)
+  if (params?.page !== undefined) searchParams.append("page", params.page.toString())
+  if (params?.limit !== undefined) searchParams.append("limit", params.limit.toString())
+  const queryString = searchParams.toString() ? `?${searchParams.toString()}` : ""
   const response = await authenticatedFetch(`/stock/current${queryString}`)
   return response.json()
 }

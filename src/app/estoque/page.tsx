@@ -47,7 +47,7 @@ export default function EstoquePage() {
 
       setTotalValue(totalValueData)
       setLowStock(lowStockData)
-      setCurrentStockCount(currentStockData.products.length)
+      setCurrentStockCount(currentStockData.pagination?.total ?? currentStockData.products.length)
 
       // Calcular total de itens usados hoje somando totalQuantity de cada produto
       const totalItems = dailyUsageData?.products?.reduce((sum, product) => sum + product.totalQuantity, 0) || 0

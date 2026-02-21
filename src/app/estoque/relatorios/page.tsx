@@ -13,7 +13,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ArrowLeft, Loader2, TrendingUp, AlertTriangle, DollarSign, Calendar } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  ArrowLeft,
+  Loader2,
+  TrendingUp,
+  AlertTriangle,
+  DollarSign,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"
 import {
   getLowStock,
   getDailyUsage,
@@ -49,8 +65,13 @@ export default function RelatoriosPage() {
   )
 
   const [currentStock, setCurrentStock] = useState<CurrentStockResponse | null>(null)
+  const [currentStockPage, setCurrentStockPage] = useState(1)
+  const [currentStockLimit, setCurrentStockLimit] = useState(20)
+  const [currentStockPageInputValue, setCurrentStockPageInputValue] = useState("1")
 
   const [totalValue, setTotalValue] = useState<TotalValueResponse | null>(null)
+
+  const LIMIT_OPTIONS = [10, 20, 30] as const
 
   const loadLowStock = async () => {
     try {
@@ -105,7 +126,10 @@ export default function RelatoriosPage() {
     try {
       setIsLoading(true)
       setError("")
-      const response = await getCurrentStock()
+      const response = await getCurrentStock({
+        page: currentStockPage,
+        limit: currentStockLimit,
+      })
       setCurrentStock(response)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar estoque atual")
@@ -113,6 +137,26 @@ export default function RelatoriosPage() {
       setIsLoading(false)
     }
   }
+
+  const currentStockPagination = currentStock?.pagination
+
+  useEffect(() => {
+    if (currentStockPagination) {
+      setCurrentStockPageInputValue(currentStockPagination.page.toString())
+    }
+  }, [currentStockPagination?.page])
+
+  useEffect(() => {
+    if (
+      activeTab === "current" &&
+      !isLoading &&
+      currentStock?.products.length === 0 &&
+      currentStockPagination &&
+      currentStockPagination.page > 1
+    ) {
+      setCurrentStockPage(1)
+    }
+  }, [activeTab, isLoading, currentStock?.products.length, currentStockPagination])
 
   const loadTotalValue = async () => {
     try {
@@ -145,7 +189,18 @@ export default function RelatoriosPage() {
         loadTotalValue()
         break
     }
-  }, [activeTab, dailyDate, weeklyStartDate])
+  }, [activeTab, dailyDate, weeklyStartDate, currentStockPage, currentStockLimit])
+
+  const goToCurrentStockPage = (value: string) => {
+    if (!currentStockPagination) return
+    const num = parseInt(value, 10)
+    if (isNaN(num) || num < 1 || num > currentStockPagination.totalPages) {
+      setCurrentStockPageInputValue(currentStockPagination.page.toString())
+      return
+    }
+    setCurrentStockPage(num)
+    setCurrentStockPageInputValue(num.toString())
+  }
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -543,7 +598,21 @@ export default function RelatoriosPage() {
                 <CardHeader>
                   <CardTitle>Estoque Atual</CardTitle>
                   <CardDescription>
-                    Lista completa de produtos e seus estoques atuais
+                    {currentStock.products.length === 0 ? (
+                      "Nenhum produto cadastrado"
+                    ) : currentStock.pagination ? (
+                      <>
+                        Mostrando{" "}
+                        {(currentStock.pagination.page - 1) * currentStock.pagination.limit + 1}-
+                        {Math.min(
+                          currentStock.pagination.page * currentStock.pagination.limit,
+                          currentStock.pagination.total
+                        )}{" "}
+                        de {currentStock.pagination.total} produto(s)
+                      </>
+                    ) : (
+                      "Lista completa de produtos e seus estoques atuais"
+                    )}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -552,56 +621,148 @@ export default function RelatoriosPage() {
                       <p className="text-muted-foreground">Nenhum produto cadastrado</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Produto</TableHead>
-                            <TableHead>Categoria</TableHead>
-                            <TableHead>Estoque</TableHead>
-                            <TableHead>Mínimo</TableHead>
-                            <TableHead>Unidade</TableHead>
-                            <TableHead>Custo Médio</TableHead>
-                            <TableHead>Valor Total</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {currentStock.products.map((product) => (
-                            <TableRow key={product.id}>
-                              <TableCell className="font-medium">{product.name}</TableCell>
-                              <TableCell>{product.category || "-"}</TableCell>
-                              <TableCell
-                                className={
-                                  product.currentStock < product.minStock
-                                    ? "text-destructive font-bold"
-                                    : ""
-                                }
-                              >
-                                {product.currentStock}
-                              </TableCell>
-                              <TableCell>{product.minStock}</TableCell>
-                              <TableCell>{product.unit}</TableCell>
-                              <TableCell>
-                                {product.averageCost
-                                  ? new Intl.NumberFormat("pt-BR", {
-                                      style: "currency",
-                                      currency: "BRL",
-                                    }).format(parseFloat(product.averageCost))
-                                  : "-"}
-                              </TableCell>
-                              <TableCell>
-                                {product.totalValue
-                                  ? new Intl.NumberFormat("pt-BR", {
-                                      style: "currency",
-                                      currency: "BRL",
-                                    }).format(parseFloat(product.totalValue))
-                                  : "-"}
-                              </TableCell>
+                    <>
+                      <div className="mb-4 flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Itens por página:</span>
+                          <Select
+                            value={currentStockLimit.toString()}
+                            onValueChange={(value) => {
+                              setCurrentStockLimit(Number(value))
+                              setCurrentStockPage(1)
+                            }}
+                          >
+                            <SelectTrigger className="w-20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {LIMIT_OPTIONS.map((opt) => (
+                                <SelectItem key={opt} value={opt.toString()}>
+                                  {opt}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Produto</TableHead>
+                              <TableHead>Categoria</TableHead>
+                              <TableHead>Estoque</TableHead>
+                              <TableHead>Mínimo</TableHead>
+                              <TableHead>Unidade</TableHead>
+                              <TableHead>Custo Médio</TableHead>
+                              <TableHead>Valor Total</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                          </TableHeader>
+                          <TableBody>
+                            {currentStock.products.map((product) => (
+                              <TableRow key={product.id}>
+                                <TableCell className="font-medium">{product.name}</TableCell>
+                                <TableCell>{product.category || "-"}</TableCell>
+                                <TableCell
+                                  className={
+                                    product.currentStock < product.minStock
+                                      ? "text-destructive font-bold"
+                                      : ""
+                                  }
+                                >
+                                  {product.currentStock}
+                                </TableCell>
+                                <TableCell>{product.minStock}</TableCell>
+                                <TableCell>{product.unit}</TableCell>
+                                <TableCell>
+                                  {product.averageCost
+                                    ? new Intl.NumberFormat("pt-BR", {
+                                        style: "currency",
+                                        currency: "BRL",
+                                      }).format(parseFloat(String(product.averageCost)))
+                                    : "-"}
+                                </TableCell>
+                                <TableCell>
+                                  {product.totalValue != null
+                                    ? new Intl.NumberFormat("pt-BR", {
+                                        style: "currency",
+                                        currency: "BRL",
+                                      }).format(
+                                        typeof product.totalValue === "number"
+                                          ? product.totalValue
+                                          : parseFloat(String(product.totalValue))
+                                      )
+                                    : "-"}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      {currentStockPagination && currentStockPagination.totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>Página</span>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={currentStockPagination.totalPages}
+                              value={
+                                currentStockPageInputValue ||
+                                currentStockPagination.page
+                              }
+                              onChange={(e) =>
+                                setCurrentStockPageInputValue(e.target.value)
+                              }
+                              onBlur={() =>
+                                goToCurrentStockPage(
+                                  currentStockPageInputValue ||
+                                    currentStockPagination.page.toString()
+                                )
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter")
+                                  goToCurrentStockPage(
+                                    currentStockPageInputValue ||
+                                      currentStockPagination.page.toString()
+                                  )
+                              }}
+                              className="w-14 h-8 text-center px-1 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [appearance:textfield]"
+                            />
+                            <span>de {currentStockPagination.totalPages}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setCurrentStockPage((p) => Math.max(1, p - 1))
+                              }
+                              disabled={!currentStockPagination.hasPrev}
+                            >
+                              <ChevronLeft className="h-4 w-4 mr-1" />
+                              Anterior
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setCurrentStockPage((p) =>
+                                  Math.min(
+                                    currentStockPagination.totalPages,
+                                    p + 1
+                                  )
+                                )
+                              }
+                              disabled={!currentStockPagination.hasNext}
+                            >
+                              Próxima
+                              <ChevronRight className="h-4 w-4 ml-1" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
