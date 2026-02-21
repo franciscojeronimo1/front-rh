@@ -511,6 +511,12 @@ export interface LowStockProduct extends CurrentStockProduct {
 
 export interface LowStockResponse {
   products: LowStockProduct[]
+  pagination: PaginationInfo
+}
+
+export interface GetLowStockParams {
+  page?: number
+  limit?: number
 }
 
 export interface DailyUsageExit {
@@ -587,8 +593,14 @@ export async function getCurrentStock(
   return response.json()
 }
 
-export async function getLowStock(): Promise<LowStockResponse> {
-  const response = await authenticatedFetch("/stock/low-stock")
+export async function getLowStock(
+  params?: GetLowStockParams
+): Promise<LowStockResponse> {
+  const searchParams = new URLSearchParams()
+  if (params?.page !== undefined) searchParams.append("page", params.page.toString())
+  if (params?.limit !== undefined) searchParams.append("limit", params.limit.toString())
+  const queryString = searchParams.toString() ? `?${searchParams.toString()}` : ""
+  const response = await authenticatedFetch(`/stock/low-stock${queryString}`)
   return response.json()
 }
 export async function getDailyUsage(date?: string): Promise<DailyUsageResponse> {

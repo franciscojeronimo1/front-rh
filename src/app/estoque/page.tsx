@@ -31,6 +31,7 @@ export default function EstoquePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [totalValue, setTotalValue] = useState<TotalValueResponse | null>(null)
   const [lowStock, setLowStock] = useState<LowStockResponse | null>(null)
+  const [lowStockCount, setLowStockCount] = useState(0)
   const [currentStockCount, setCurrentStockCount] = useState(0)
   const [dailyUsageTotal, setDailyUsageTotal] = useState(0)
 
@@ -47,6 +48,7 @@ export default function EstoquePage() {
 
       setTotalValue(totalValueData)
       setLowStock(lowStockData)
+      setLowStockCount(lowStockData.pagination?.total ?? lowStockData.products.length)
       setCurrentStockCount(currentStockData.pagination?.total ?? currentStockData.products.length)
 
       // Calcular total de itens usados hoje somando totalQuantity de cada produto
@@ -156,7 +158,7 @@ export default function EstoquePage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-destructive">
-                {lowStock?.products.length || 0}
+                {lowStockCount}
               </div>
               <p className="text-xs text-muted-foreground mt-1">Produtos abaixo do mínimo</p>
             </CardContent>

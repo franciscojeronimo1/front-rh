@@ -55,6 +55,9 @@ export default function RelatoriosPage() {
 
 
   const [lowStock, setLowStock] = useState<LowStockResponse | null>(null)
+  const [lowStockPage, setLowStockPage] = useState(1)
+  const [lowStockLimit, setLowStockLimit] = useState(20)
+  const [lowStockPageInputValue, setLowStockPageInputValue] = useState("1")
 
   const [dailyUsage, setDailyUsage] = useState<DailyUsageResponse | null>(null)
   const [dailyDate, setDailyDate] = useState(format(new Date(), "yyyy-MM-dd"))
@@ -77,7 +80,10 @@ export default function RelatoriosPage() {
     try {
       setIsLoading(true)
       setError("")
-      const response = await getLowStock()
+      const response = await getLowStock({
+        page: lowStockPage,
+        limit: lowStockLimit,
+      })
       setLowStock(response)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar estoque baixo")
@@ -85,6 +91,14 @@ export default function RelatoriosPage() {
       setIsLoading(false)
     }
   }
+
+  const lowStockPagination = lowStock?.pagination
+
+  useEffect(() => {
+    if (lowStockPagination) {
+      setLowStockPageInputValue(lowStockPagination.page.toString())
+    }
+  }, [lowStockPagination?.page])
 
   const loadDailyUsage = async () => {
     try {
@@ -158,6 +172,18 @@ export default function RelatoriosPage() {
     }
   }, [activeTab, isLoading, currentStock?.products.length, currentStockPagination])
 
+  useEffect(() => {
+    if (
+      activeTab === "low" &&
+      !isLoading &&
+      lowStock?.products.length === 0 &&
+      lowStockPagination &&
+      lowStockPagination.page > 1
+    ) {
+      setLowStockPage(1)
+    }
+  }, [activeTab, isLoading, lowStock?.products.length, lowStockPagination])
+
   const loadTotalValue = async () => {
     try {
       setIsLoading(true)
@@ -189,7 +215,18 @@ export default function RelatoriosPage() {
         loadTotalValue()
         break
     }
-  }, [activeTab, dailyDate, weeklyStartDate, currentStockPage, currentStockLimit])
+  }, [activeTab, dailyDate, weeklyStartDate, currentStockPage, currentStockLimit, lowStockPage, lowStockLimit])
+
+  const goToLowStockPage = (value: string) => {
+    if (!lowStockPagination) return
+    const num = parseInt(value, 10)
+    if (isNaN(num) || num < 1 || num > lowStockPagination.totalPages) {
+      setLowStockPageInputValue(lowStockPagination.page.toString())
+      return
+    }
+    setLowStockPage(num)
+    setLowStockPageInputValue(num.toString())
+  }
 
   const goToCurrentStockPage = (value: string) => {
     if (!currentStockPagination) return
@@ -287,7 +324,21 @@ export default function RelatoriosPage() {
                     Produtos com Estoque Baixo
                   </CardTitle>
                   <CardDescription>
-                    {lowStock.products.length} produto(s) abaixo do estoque mínimo
+                    {lowStock.products.length === 0 ? (
+                      "Nenhum produto com estoque baixo"
+                    ) : lowStock.pagination ? (
+                      <>
+                        Mostrando{" "}
+                        {(lowStock.pagination.page - 1) * lowStock.pagination.limit + 1}-
+                        {Math.min(
+                          lowStock.pagination.page * lowStock.pagination.limit,
+                          lowStock.pagination.total
+                        )}{" "}
+                        de {lowStock.pagination.total} produto(s) abaixo do mínimo
+                      </>
+                    ) : (
+                      `${lowStock.products.length} produto(s) abaixo do estoque mínimo`
+                    )}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -296,36 +347,123 @@ export default function RelatoriosPage() {
                       <p className="text-muted-foreground">Nenhum produto com estoque baixo</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Produto</TableHead>
-                            <TableHead>Categoria</TableHead>
-                            <TableHead>Estoque Atual</TableHead>
-                            <TableHead>Estoque Mínimo</TableHead>
-                            <TableHead>Unidade</TableHead>
-                            <TableHead>Déficit</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {lowStock.products.map((product) => (
-                            <TableRow key={product.id}>
-                              <TableCell className="font-medium">{product.name}</TableCell>
-                              <TableCell>{product.category || "-"}</TableCell>
-                              <TableCell className="text-destructive font-bold">
-                                {product.currentStock}
-                              </TableCell>
-                              <TableCell>{product.minStock}</TableCell>
-                              <TableCell>{product.unit}</TableCell>
-                              <TableCell className="text-destructive font-bold">
-                                -{product.deficit}
-                              </TableCell>
+                    <>
+                      <div className="mb-4 flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Itens por página:</span>
+                          <Select
+                            value={lowStockLimit.toString()}
+                            onValueChange={(value) => {
+                              setLowStockLimit(Number(value))
+                              setLowStockPage(1)
+                            }}
+                          >
+                            <SelectTrigger className="w-20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {LIMIT_OPTIONS.map((opt) => (
+                                <SelectItem key={opt} value={opt.toString()}>
+                                  {opt}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Produto</TableHead>
+                              <TableHead>Categoria</TableHead>
+                              <TableHead>Estoque Atual</TableHead>
+                              <TableHead>Estoque Mínimo</TableHead>
+                              <TableHead>Unidade</TableHead>
+                              <TableHead>Déficit</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                          </TableHeader>
+                          <TableBody>
+                            {lowStock.products.map((product) => (
+                              <TableRow key={product.id}>
+                                <TableCell className="font-medium">{product.name}</TableCell>
+                                <TableCell>{product.category || "-"}</TableCell>
+                                <TableCell className="text-destructive font-bold">
+                                  {product.currentStock}
+                                </TableCell>
+                                <TableCell>{product.minStock}</TableCell>
+                                <TableCell>{product.unit}</TableCell>
+                                <TableCell className="text-destructive font-bold">
+                                  -{(product.deficit ?? product.minStock - product.currentStock)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      {lowStockPagination && lowStockPagination.totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>Página</span>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={lowStockPagination.totalPages}
+                              value={
+                                lowStockPageInputValue || lowStockPagination.page
+                              }
+                              onChange={(e) =>
+                                setLowStockPageInputValue(e.target.value)
+                              }
+                              onBlur={() =>
+                                goToLowStockPage(
+                                  lowStockPageInputValue ||
+                                    lowStockPagination.page.toString()
+                                )
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter")
+                                  goToLowStockPage(
+                                    lowStockPageInputValue ||
+                                      lowStockPagination.page.toString()
+                                  )
+                              }}
+                              className="w-14 h-8 text-center px-1 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [appearance:textfield]"
+                            />
+                            <span>de {lowStockPagination.totalPages}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setLowStockPage((p) => Math.max(1, p - 1))
+                              }
+                              disabled={!lowStockPagination.hasPrev}
+                            >
+                              <ChevronLeft className="h-4 w-4 mr-1" />
+                              Anterior
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setLowStockPage((p) =>
+                                  Math.min(
+                                    lowStockPagination.totalPages,
+                                    p + 1
+                                  )
+                                )
+                              }
+                              disabled={!lowStockPagination.hasNext}
+                            >
+                              Próxima
+                              <ChevronRight className="h-4 w-4 ml-1" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
