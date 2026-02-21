@@ -512,6 +512,23 @@ export interface LowStockResponse {
   products: LowStockProduct[]
 }
 
+export interface DailyUsageExit {
+  id: string
+  quantity: number
+  unitPrice?: string | null
+  totalPrice?: string | null
+  projectName?: string | null
+  clientName?: string | null
+  serviceType?: string | null
+  notes?: string | null
+  createdAt: string
+  product?: {
+    id: string
+    name: string
+    unit: string
+  }
+}
+
 export interface DailyUsageProduct {
   product: {
     id: string
@@ -519,15 +536,7 @@ export interface DailyUsageProduct {
     unit: string
   }
   totalQuantity: number
-  exits: Array<{
-    id: string
-    quantity: number
-    projectName?: string | null
-    clientName?: string | null
-    serviceType?: string | null
-    notes?: string | null
-    createdAt: string
-  }>
+  exits: DailyUsageExit[]
 }
 
 export interface DailyUsageResponse {

@@ -310,42 +310,104 @@ export default function RelatoriosPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-muted p-4 rounded-lg">
-                          <p className="text-sm text-muted-foreground">Total de Saídas</p>
-                          <p className="text-2xl font-bold">{dailyUsage.totalExits || 0}</p>
-                        </div>
-                        <div className="bg-muted p-4 rounded-lg">
-                          <p className="text-sm text-muted-foreground">Quantidade Total</p>
-                          <p className="text-2xl font-bold">
-                            {dailyUsage.products.reduce((sum, p) => sum + p.totalQuantity, 0)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Produto</TableHead>
-                              <TableHead>Quantidade</TableHead>
-                              <TableHead>Unidade</TableHead>
-                              <TableHead>Saídas</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {dailyUsage.products.map((productItem) => (
-                              <TableRow key={productItem.product.id}>
-                                <TableCell className="font-medium">
-                                  {productItem.product.name}
-                                </TableCell>
-                                <TableCell>{productItem.totalQuantity}</TableCell>
-                                <TableCell>{productItem.product.unit}</TableCell>
-                                <TableCell>{productItem.exits.length}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
+                      {(() => {
+                        const totalValue = dailyUsage.products.reduce((sum, p) => {
+                          return (
+                            sum +
+                            p.exits.reduce(
+                              (s, e) => s + (e.totalPrice ? parseFloat(e.totalPrice) : 0),
+                              0
+                            )
+                          )
+                        }, 0)
+                        const totalQuantity = dailyUsage.products.reduce(
+                          (sum, p) => sum + p.totalQuantity,
+                          0
+                        )
+                        return (
+                          <>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                              <div className="bg-muted p-4 rounded-lg">
+                                <p className="text-sm text-muted-foreground">Total de Saídas</p>
+                                <p className="text-2xl font-bold">
+                                  {dailyUsage.totalExits || 0}
+                                </p>
+                              </div>
+                              <div className="bg-muted p-4 rounded-lg">
+                                <p className="text-sm text-muted-foreground">Quantidade Total</p>
+                                <p className="text-2xl font-bold">{totalQuantity}</p>
+                              </div>
+                              <div className="bg-muted p-4 rounded-lg">
+                                <p className="text-sm text-muted-foreground">Valor Total</p>
+                                <p className="text-2xl font-bold">
+                                  {new Intl.NumberFormat("pt-BR", {
+                                    style: "currency",
+                                    currency: "BRL",
+                                  }).format(totalValue)}
+                                </p>
+                              </div>
+                              <div className="bg-muted p-4 rounded-lg">
+                                <p className="text-sm text-muted-foreground">Produtos</p>
+                                <p className="text-2xl font-bold">
+                                  {dailyUsage.products.length}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Produto</TableHead>
+                                    <TableHead>Quantidade</TableHead>
+                                    <TableHead>Unidade</TableHead>
+                                    <TableHead>Preço Unit.</TableHead>
+                                    <TableHead>Valor Total</TableHead>
+                                    <TableHead>Cliente</TableHead>
+                                    <TableHead>Projeto</TableHead>
+                                    <TableHead>Tipo Serviço</TableHead>
+                                    <TableHead>Observações</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {dailyUsage.products.flatMap((productItem) =>
+                                    productItem.exits.map((exit) => (
+                                      <TableRow key={exit.id}>
+                                        <TableCell className="font-medium">
+                                          {productItem.product.name}
+                                        </TableCell>
+                                        <TableCell>{exit.quantity}</TableCell>
+                                        <TableCell>{productItem.product.unit}</TableCell>
+                                        <TableCell>
+                                          {exit.unitPrice
+                                            ? new Intl.NumberFormat("pt-BR", {
+                                                style: "currency",
+                                                currency: "BRL",
+                                              }).format(parseFloat(exit.unitPrice))
+                                            : "-"}
+                                        </TableCell>
+                                        <TableCell>
+                                          {exit.totalPrice
+                                            ? new Intl.NumberFormat("pt-BR", {
+                                                style: "currency",
+                                                currency: "BRL",
+                                              }).format(parseFloat(exit.totalPrice))
+                                            : "-"}
+                                        </TableCell>
+                                        <TableCell>{exit.clientName || "-"}</TableCell>
+                                        <TableCell>{exit.projectName || "-"}</TableCell>
+                                        <TableCell>{exit.serviceType || "-"}</TableCell>
+                                        <TableCell>
+                                          {exit.notes || "-"}
+                                        </TableCell>
+                                      </TableRow>
+                                    ))
+                                  )}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </>
+                        )
+                      })()}
                     </>
                   )}
                 </CardContent>
