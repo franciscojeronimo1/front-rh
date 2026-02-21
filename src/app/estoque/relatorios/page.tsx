@@ -88,20 +88,13 @@ export default function RelatoriosPage() {
       setIsLoading(true)
       setError("")
       const response = await getWeeklyUsage(weeklyStartDate)
-      setWeeklyUsage({
-        ...response,
-        usage: response.usage || [],
-        totalItems: response.totalItems || 0,
-        totalQuantity: response.totalQuantity || 0,
-      })
+      setWeeklyUsage(response)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar uso semanal")
       setWeeklyUsage({
         startDate: weeklyStartDate,
         endDate: weeklyStartDate,
-        usage: [],
-        totalItems: 0,
-        totalQuantity: 0,
+        products: [],
       })
     } finally {
       setIsLoading(false)
@@ -422,8 +415,8 @@ export default function RelatoriosPage() {
                     Uso Semanal
                   </CardTitle>
                   <CardDescription>
-                    De {format(new Date(weeklyUsage.startDate), "dd/MM/yyyy")} até{" "}
-                    {format(new Date(weeklyUsage.endDate), "dd/MM/yyyy")}
+                    De {format(parse(weeklyUsage.startDate, "yyyy-MM-dd", new Date()), "dd/MM/yyyy")}{" "}
+                    até {format(parse(weeklyUsage.endDate, "yyyy-MM-dd", new Date()), "dd/MM/yyyy")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -435,42 +428,110 @@ export default function RelatoriosPage() {
                       className="w-full md:w-auto"
                     />
                   </div>
-                  {!weeklyUsage.usage || weeklyUsage.usage.length === 0 ? (
+                  {!weeklyUsage.products || weeklyUsage.products.length === 0 ? (
                     <div className="text-center py-12">
                       <p className="text-muted-foreground">Nenhum uso registrado nesta semana</p>
                     </div>
                   ) : (
                     <>
-                      <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-muted p-4 rounded-lg">
-                          <p className="text-sm text-muted-foreground">Total de Itens</p>
-                          <p className="text-2xl font-bold">{weeklyUsage.totalItems || 0}</p>
-                        </div>
-                        <div className="bg-muted p-4 rounded-lg">
-                          <p className="text-sm text-muted-foreground">Quantidade Total</p>
-                          <p className="text-2xl font-bold">{weeklyUsage.totalQuantity || 0}</p>
-                        </div>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Produto</TableHead>
-                              <TableHead>Quantidade</TableHead>
-                              <TableHead>Unidade</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {weeklyUsage.usage.map((item, index) => (
-                              <TableRow key={index}>
-                                <TableCell className="font-medium">{item.productName}</TableCell>
-                                <TableCell>{item.quantity}</TableCell>
-                                <TableCell>{item.unit}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
+                      {(() => {
+                        const totalValue = weeklyUsage.products.reduce((sum, p) => {
+                          return (
+                            sum +
+                            (p.exits || []).reduce(
+                              (s, e) => s + (e.totalPrice ? parseFloat(e.totalPrice) : 0),
+                              0
+                            )
+                          )
+                        }, 0)
+                        const totalQuantity = weeklyUsage.products.reduce(
+                          (sum, p) => sum + p.totalQuantity,
+                          0
+                        )
+                        const totalExits =
+                          weeklyUsage.totalExits ??
+                          weeklyUsage.products.reduce(
+                            (sum, p) => sum + (p.exits?.length || 0),
+                            0
+                          )
+                        return (
+                          <>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                              <div className="bg-muted p-4 rounded-lg">
+                                <p className="text-sm text-muted-foreground">Total de Saídas</p>
+                                <p className="text-2xl font-bold">{totalExits}</p>
+                              </div>
+                              <div className="bg-muted p-4 rounded-lg">
+                                <p className="text-sm text-muted-foreground">Quantidade Total</p>
+                                <p className="text-2xl font-bold">{totalQuantity}</p>
+                              </div>
+                              <div className="bg-muted p-4 rounded-lg">
+                                <p className="text-sm text-muted-foreground">Valor Total</p>
+                                <p className="text-2xl font-bold">
+                                  {new Intl.NumberFormat("pt-BR", {
+                                    style: "currency",
+                                    currency: "BRL",
+                                  }).format(totalValue)}
+                                </p>
+                              </div>
+                              <div className="bg-muted p-4 rounded-lg">
+                                <p className="text-sm text-muted-foreground">Produtos</p>
+                                <p className="text-2xl font-bold">{weeklyUsage.products.length}</p>
+                              </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Produto</TableHead>
+                                    <TableHead>Quantidade</TableHead>
+                                    <TableHead>Unidade</TableHead>
+                                    <TableHead>Preço Unit.</TableHead>
+                                    <TableHead>Valor Total</TableHead>
+                                    <TableHead>Cliente</TableHead>
+                                    <TableHead>Projeto</TableHead>
+                                    <TableHead>Tipo Serviço</TableHead>
+                                    <TableHead>Observações</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {weeklyUsage.products.flatMap((productItem) =>
+                                    (productItem.exits || []).map((exit) => (
+                                      <TableRow key={exit.id}>
+                                        <TableCell className="font-medium">
+                                          {productItem.product.name}
+                                        </TableCell>
+                                        <TableCell>{exit.quantity}</TableCell>
+                                        <TableCell>{productItem.product.unit}</TableCell>
+                                        <TableCell>
+                                          {exit.unitPrice
+                                            ? new Intl.NumberFormat("pt-BR", {
+                                                style: "currency",
+                                                currency: "BRL",
+                                              }).format(parseFloat(exit.unitPrice))
+                                            : "-"}
+                                        </TableCell>
+                                        <TableCell>
+                                          {exit.totalPrice
+                                            ? new Intl.NumberFormat("pt-BR", {
+                                                style: "currency",
+                                                currency: "BRL",
+                                              }).format(parseFloat(exit.totalPrice))
+                                            : "-"}
+                                        </TableCell>
+                                        <TableCell>{exit.clientName || "-"}</TableCell>
+                                        <TableCell>{exit.projectName || "-"}</TableCell>
+                                        <TableCell>{exit.serviceType || "-"}</TableCell>
+                                        <TableCell>{exit.notes || "-"}</TableCell>
+                                      </TableRow>
+                                    ))
+                                  )}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </>
+                        )
+                      })()}
                     </>
                   )}
                 </CardContent>

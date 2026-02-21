@@ -545,19 +545,21 @@ export interface DailyUsageResponse {
   totalExits: number
 }
 
-export interface WeeklyUsageItem {
-  productId: string
-  productName: string
-  quantity: number
-  unit: string
+export interface WeeklyUsageProduct {
+  product: {
+    id: string
+    name: string
+    unit: string
+  }
+  totalQuantity: number
+  exits: DailyUsageExit[]
 }
 
 export interface WeeklyUsageResponse {
   startDate: string
   endDate: string
-  usage: WeeklyUsageItem[]
-  totalItems: number
-  totalQuantity: number
+  products: WeeklyUsageProduct[]
+  totalExits?: number
 }
 
 export interface TotalValueResponse {
