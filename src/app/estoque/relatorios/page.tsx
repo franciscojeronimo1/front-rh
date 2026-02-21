@@ -26,7 +26,7 @@ import {
   type TotalValueResponse,
   type CurrentStockResponse,
 } from "@/lib/api"
-import { format } from "date-fns"
+import { format, parse } from "date-fns"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function RelatoriosPage() {
@@ -291,7 +291,8 @@ export default function RelatoriosPage() {
                     Uso Diário
                   </CardTitle>
                   <CardDescription>
-                    Uso de produtos no dia {format(new Date(dailyDate), "dd/MM/yyyy")}
+                    Uso de produtos no dia{" "}
+                    {format(parse(dailyDate, "yyyy-MM-dd", new Date()), "dd/MM/yyyy")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
