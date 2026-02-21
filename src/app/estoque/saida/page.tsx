@@ -39,6 +39,14 @@ const exitSchema = z.object({
     const num = parseFloat(val)
     return !isNaN(num) && num > 0
   }, "Quantidade deve ser maior que 0"),
+  unitPrice: z
+    .string()
+    .optional()
+    .refine((val) => {
+      if (!val || val.trim() === "") return true
+      const num = parseFloat(val)
+      return !isNaN(num) && num > 0
+    }, "Preço unitário deve ser maior que 0 quando informado"),
   projectName: z.string().optional(),
   clientName: z.string().optional(),
   serviceType: z.string().optional(),
@@ -54,12 +62,14 @@ export default function RegistrarSaidaPage() {
   const [isLoadingProducts, setIsLoadingProducts] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [totalPricePreview, setTotalPricePreview] = useState(0)
 
   const form = useForm<ExitFormValues>({
     resolver: zodResolver(exitSchema),
     defaultValues: {
       productId: "",
       quantity: "",
+      unitPrice: "",
       projectName: "",
       clientName: "",
       serviceType: "",
@@ -83,6 +93,8 @@ export default function RegistrarSaidaPage() {
   }, [])
 
   const productId = form.watch("productId")
+  const quantity = form.watch("quantity")
+  const unitPrice = form.watch("unitPrice")
 
   useEffect(() => {
     if (productId) {
@@ -92,6 +104,16 @@ export default function RegistrarSaidaPage() {
       setSelectedProduct(null)
     }
   }, [productId, products])
+
+  useEffect(() => {
+    const qty = parseFloat(quantity) || 0
+    const price = parseFloat(unitPrice || "") || 0
+    if (qty > 0 && price > 0) {
+      setTotalPricePreview(qty * price)
+    } else {
+      setTotalPricePreview(0)
+    }
+  }, [quantity, unitPrice])
 
   const onSubmit = async (data: ExitFormValues) => {
     try {
@@ -108,9 +130,16 @@ export default function RegistrarSaidaPage() {
         return
       }
 
+      const unitPriceNum = data.unitPrice?.trim()
+        ? parseFloat(data.unitPrice)
+        : undefined
+      const hasValidUnitPrice =
+        typeof unitPriceNum === "number" && !isNaN(unitPriceNum) && unitPriceNum > 0
+
       const requestData: CreateStockExitRequest = {
         productId: data.productId,
         quantity: quantityNum,
+        ...(hasValidUnitPrice && { unitPrice: unitPriceNum }),
         projectName: data.projectName || undefined,
         clientName: data.clientName || undefined,
         serviceType: data.serviceType || undefined,
@@ -235,6 +264,44 @@ export default function RegistrarSaidaPage() {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="unitPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preço unitário de venda (opcional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="Ex: 25.50 (deixe vazio para saída sem venda)"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Informe quando for venda ao cliente. Saídas internas/perdas podem ficar sem
+                        preço.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {totalPricePreview > 0 && (
+                  <div className="bg-muted p-4 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Total da venda:</span>
+                      <span className="text-2xl font-bold">
+                        {new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(totalPricePreview)}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <FormField
                   control={form.control}

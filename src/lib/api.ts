@@ -427,6 +427,8 @@ export interface StockExit {
   id: string
   productId: string
   quantity: number
+  unitPrice?: string | null
+  totalPrice?: string | null
   projectName?: string | null
   clientName?: string | null
   serviceType?: string | null
@@ -446,6 +448,7 @@ export interface StockExit {
 export interface CreateStockExitRequest {
   productId: string
   quantity: number
+  unitPrice?: number
   projectName?: string
   clientName?: string
   serviceType?: string
