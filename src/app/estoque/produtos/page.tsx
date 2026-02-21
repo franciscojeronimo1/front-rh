@@ -41,6 +41,7 @@ import {
 } from "lucide-react"
 import {
   getProducts,
+  getCategories,
   deleteProduct,
   type Product,
   type PaginationInfo,
@@ -65,6 +66,19 @@ export default function ProdutosPage() {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [pageInputValue, setPageInputValue] = useState("")
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await getCategories()
+        setCategories(response.categories)
+      } catch {
+        // Silencioso - filtro de categoria continua funcionando com lista vazia
+      }
+    }
+    loadCategories()
+  }, [])
 
   const loadProducts = async () => {
     try {
@@ -147,10 +161,6 @@ export default function ProdutosPage() {
     }
   }
 
-  const categories = Array.from(
-    new Set(products.map((p) => p.category).filter((c): c is string => !!c))
-  )
-
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -226,9 +236,9 @@ export default function ProdutosPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as categorias</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.name}>
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
