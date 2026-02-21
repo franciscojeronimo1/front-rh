@@ -269,7 +269,8 @@ export interface DeleteProductResponse {
 
 export interface GetProductsParams {
   category?: string
-  active?: boolean
+  /** Incluir produtos inativos. O backend usa includeInactive: true=ativos+inativos, false/omitido=apenas ativos */
+  includeInactive?: boolean
   page?: number
   limit?: number
 }
@@ -277,7 +278,7 @@ export interface GetProductsParams {
 export async function getProducts(params?: GetProductsParams): Promise<ProductsResponse> {
   const searchParams = new URLSearchParams()
   if (params?.category) searchParams.append("category", params.category)
-  if (params?.active !== undefined) searchParams.append("active", params.active.toString())
+  if (params?.includeInactive === true) searchParams.append("includeInactive", "true")
   if (params?.page !== undefined) searchParams.append("page", params.page.toString())
   if (params?.limit !== undefined) searchParams.append("limit", params.limit.toString())
   const queryString = searchParams.toString() ? `?${searchParams.toString()}` : ""

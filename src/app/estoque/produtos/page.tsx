@@ -70,10 +70,11 @@ export default function ProdutosPage() {
     try {
       setIsLoading(true)
       setError("")
-      const active = activeFilter === "all" ? undefined : activeFilter === "true"
+      // Backend: includeInactive=true retorna ativos+inativos. Omitido retorna apenas ativos.
+      const includeInactive = activeFilter !== "true"
       const response = await getProducts({
         category: categoryFilter === "all" ? undefined : categoryFilter,
-        active,
+        includeInactive,
         page,
         limit,
       })
@@ -155,7 +156,11 @@ export default function ProdutosPage() {
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesSearch
+    const matchesActive =
+      activeFilter === "all" ||
+      (activeFilter === "true" && product.active) ||
+      (activeFilter === "false" && !product.active)
+    return matchesSearch && matchesActive
   })
 
   const isLowStock = (product: Product) => product.currentStock < product.minStock
