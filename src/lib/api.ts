@@ -5,6 +5,16 @@ function getAuthToken(): string | null {
   return localStorage.getItem("token")
 }
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number
+  ) {
+    super(message)
+    this.name = "ApiError"
+  }
+}
+
 function getMessageByStatus(status: number): string {
   switch (status) {
     case 401:
@@ -13,6 +23,8 @@ function getMessageByStatus(status: number): string {
       return "Você não tem permissão para acessar este recurso."
     case 404:
       return "Recurso não encontrado."
+    case 429:
+      return "Muitas requisições. Aguarde alguns minutos e tente novamente."
     case 500:
     case 502:
     case 503:
@@ -43,7 +55,7 @@ async function authenticatedFetch(
       err instanceof TypeError && err.message.includes("fetch")
         ? "Não foi possível conectar ao servidor. Verifique sua internet ou tente mais tarde."
         : "Erro na requisição. Tente novamente."
-    throw new Error(message)
+    throw new ApiError(message, 0)
   }
 
   if (!response.ok) {
@@ -54,7 +66,7 @@ async function authenticatedFetch(
     const message = error?.message && typeof error.message === "string"
       ? error.message
       : statusMessage
-    throw new Error(message)
+    throw new ApiError(message, response.status)
   }
 
   return response
