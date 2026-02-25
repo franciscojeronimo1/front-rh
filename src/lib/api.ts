@@ -5,26 +5,56 @@ function getAuthToken(): string | null {
   return localStorage.getItem("token")
 }
 
+function getMessageByStatus(status: number): string {
+  switch (status) {
+    case 401:
+      return "Sessão expirada ou inválida. Faça login novamente."
+    case 403:
+      return "Você não tem permissão para acessar este recurso."
+    case 404:
+      return "Recurso não encontrado."
+    case 500:
+    case 502:
+    case 503:
+      return "Problema temporário no servidor. Tente novamente em alguns instantes."
+    default:
+      return "Erro na requisição. Tente novamente."
+  }
+}
+
 async function authenticatedFetch(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<Response> {
   const token = getAuthToken()
-  
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers,
-    },
-  })
+  let response: Response
+
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers,
+      },
+    })
+  } catch (err) {
+    const message =
+      err instanceof TypeError && err.message.includes("fetch")
+        ? "Não foi possível conectar ao servidor. Verifique sua internet ou tente mais tarde."
+        : "Erro na requisição. Tente novamente."
+    throw new Error(message)
+  }
 
   if (!response.ok) {
+    const statusMessage = getMessageByStatus(response.status)
     const error = await response.json().catch(() => ({
-      message: "Erro na requisição. Tente novamente.",
+      message: statusMessage,
     }))
-    throw new Error(error.message || "Erro na requisição")
+    const message = error?.message && typeof error.message === "string"
+      ? error.message
+      : statusMessage
+    throw new Error(message)
   }
 
   return response
