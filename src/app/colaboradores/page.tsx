@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   getUsers,
   getTimeSummary,
   getTimeRecords,
@@ -31,13 +38,25 @@ import {
 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import {
+  getTimeSummaryParams,
+  getSummaryCardTitle,
+  getSummaryCardDescription,
+  type TimeSummaryFilterMode,
+} from "@/lib/utils"
+
+type FilterMode = TimeSummaryFilterMode
 
 export default function ColaboradoresPage() {
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
+  const [filterMode, setFilterMode] = useState<FilterMode>("day")
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = format(new Date(), "yyyy-MM-dd")
     return today
+  })
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    return format(new Date(), "yyyy-MM")
   })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
@@ -103,15 +122,26 @@ export default function ColaboradoresPage() {
       setSelectedUser(user)
       setIsDialogOpen(true)
 
-      const formattedDate = selectedDate.includes("T") ? selectedDate.split("T")[0] : selectedDate
+      const summaryParams = getTimeSummaryParams(
+        filterMode,
+        selectedDate,
+        selectedMonth,
+        user.id
+      )
 
-      const [summaryData, recordsData] = await Promise.all([
-        getTimeSummary(formattedDate, user.id),
-        getTimeRecords(formattedDate, user.id),
-      ])
-
-      setUserSummary(summaryData.summary)
-      setUserRecords(recordsData.records)
+      if (filterMode === "day") {
+        const formattedDate = selectedDate.includes("T") ? selectedDate.split("T")[0] : selectedDate
+        const [summaryData, recordsData] = await Promise.all([
+          getTimeSummary(summaryParams),
+          getTimeRecords(formattedDate, user.id),
+        ])
+        setUserSummary(summaryData.summary)
+        setUserRecords(recordsData.records)
+      } else {
+        const summaryData = await getTimeSummary(summaryParams)
+        setUserSummary(summaryData.summary)
+        setUserRecords([])
+      }
     } catch (err) {
       console.error("Erro ao carregar detalhes:", err)
       if (err instanceof ApiError && err.statusCode === 401) {
@@ -127,6 +157,20 @@ export default function ColaboradoresPage() {
   const handleDateChange = async (newDate: string) => {
     const formattedDate = newDate.includes("T") ? newDate.split("T")[0] : newDate
     setSelectedDate(formattedDate)
+    if (selectedUser) {
+      await loadUserDetails(selectedUser)
+    }
+  }
+
+  const handleMonthChange = async (newMonth: string) => {
+    setSelectedMonth(newMonth.slice(0, 7))
+    if (selectedUser) {
+      await loadUserDetails(selectedUser)
+    }
+  }
+
+  const handleFilterModeChange = async (mode: FilterMode) => {
+    setFilterMode(mode)
     if (selectedUser) {
       await loadUserDetails(selectedUser)
     }
@@ -184,17 +228,47 @@ export default function ColaboradoresPage() {
                 Gerencie e acompanhe o trabalho da sua equipe
               </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-end gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="date" className="text-sm">Data</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  className="w-auto"
-                />
+                <Label className="text-sm">Visualizar por</Label>
+                <Select
+                  value={filterMode}
+                  onValueChange={(v) => handleFilterModeChange(v as FilterMode)}
+                >
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">Dia</SelectItem>
+                    <SelectItem value="periodDays">Últimos 30 dias</SelectItem>
+                    <SelectItem value="month">Mês</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+              {filterMode === "day" && (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="date" className="text-sm">Data</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className="w-auto"
+                  />
+                </div>
+              )}
+              {filterMode === "month" && (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="month" className="text-sm">Mês</Label>
+                  <Input
+                    id="month"
+                    type="month"
+                    value={selectedMonth}
+                    onChange={(e) => handleMonthChange(e.target.value)}
+                    className="w-auto"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -224,7 +298,9 @@ export default function ColaboradoresPage() {
               <ColaboradorCard
                 key={user.id}
                 user={user}
-                date={selectedDate}
+                filterMode={filterMode}
+                selectedDate={selectedDate}
+                selectedMonth={selectedMonth}
                 onViewDetails={() => loadUserDetails(user)}
                 onUnauthorized={handleUnauthorized}
               />
@@ -253,10 +329,10 @@ export default function ColaboradoresPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-primary" />
-                      Resumo do Dia
+                      {getSummaryCardTitle(filterMode, selectedDate, selectedMonth)}
                     </CardTitle>
                     <CardDescription>
-                      {format(parseISO(selectedDate + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                      {getSummaryCardDescription(filterMode, selectedDate, userSummary)}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -316,54 +392,56 @@ export default function ColaboradoresPage() {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <History className="w-5 h-5 text-primary" />
-                      Histórico do Dia
-                    </CardTitle>
-                    <CardDescription>Registros de entrada e saída</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {userRecords.length > 0 ? (
-                      <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                        {userRecords.map((record) => (
-                          <div
-                            key={record.id}
-                            className="flex items-center justify-between p-4 rounded-md border bg-card"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div
-                                className={`w-3 h-3 rounded-full ${
-                                  record.type === "START"
-                                    ? "bg-success"
-                                    : "bg-destructive"
-                                }`}
-                              />
-                              <div>
-                                <p className="font-medium text-foreground">
-                                  {record.type === "START" ? "Entrada" : "Saída"}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {formatDate(record.timestamp)}
+                {filterMode === "day" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <History className="w-5 h-5 text-primary" />
+                        Histórico do Dia
+                      </CardTitle>
+                      <CardDescription>Registros de entrada e saída</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {userRecords.length > 0 ? (
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                          {userRecords.map((record) => (
+                            <div
+                              key={record.id}
+                              className="flex items-center justify-between p-4 rounded-md border bg-card"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`w-3 h-3 rounded-full ${
+                                    record.type === "START"
+                                      ? "bg-success"
+                                      : "bg-destructive"
+                                  }`}
+                                />
+                                <div>
+                                  <p className="font-medium text-foreground">
+                                    {record.type === "START" ? "Entrada" : "Saída"}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {formatDate(record.timestamp)}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-mono text-sm font-semibold text-foreground">
+                                  {formatTime(record.timestamp)}
                                 </p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="font-mono text-sm font-semibold text-foreground">
-                                {formatTime(record.timestamp)}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-center text-muted-foreground py-8">
-                        Nenhum registro encontrado para esta data
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-center text-muted-foreground py-8">
+                          Nenhum registro encontrado para esta data
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
           </DialogContent>
@@ -375,12 +453,16 @@ export default function ColaboradoresPage() {
 
 function ColaboradorCard({
   user,
-  date,
+  filterMode,
+  selectedDate,
+  selectedMonth,
   onViewDetails,
   onUnauthorized,
 }: {
   user: User
-  date: string
+  filterMode: FilterMode
+  selectedDate: string
+  selectedMonth: string
   onViewDetails: () => void
   onUnauthorized: () => void
 }) {
@@ -389,15 +471,18 @@ function ColaboradorCard({
 
   useEffect(() => {
     const loadSummary = async () => {
-      if (!date || !user.id) {
-        return
-      }
-      
+      if (!user.id) return
+
+      const params = getTimeSummaryParams(
+        filterMode,
+        selectedDate,
+        selectedMonth,
+        user.id
+      )
+
       try {
         setIsLoading(true)
-        const formattedDate = date.includes("T") ? date.split("T")[0] : date
-        
-        const response = await getTimeSummary(formattedDate, user.id)
+        const response = await getTimeSummary(params)
         setSummary(response.summary)
       } catch (err) {
         if (err instanceof ApiError && err.statusCode === 401) {
@@ -412,7 +497,7 @@ function ColaboradorCard({
     }
 
     loadSummary()
-  }, [date, user.id, onUnauthorized])
+  }, [filterMode, selectedDate, selectedMonth, user.id, onUnauthorized])
 
   const isWorking = summary?.status === "started"
 

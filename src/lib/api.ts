@@ -129,10 +129,20 @@ export interface TimePeriod {
 
 export interface TimeSummary {
   date: string
+  startDate?: string
+  endDate?: string
   periods: TimePeriod[]
   totalMinutes: number
   totalHours: string
   status: "started" | "stopped"
+}
+
+export interface GetTimeSummaryParams {
+  date?: string
+  userId?: string
+  periodDays?: number
+  /** Mês no formato YYYY-MM (ex.: 2025-03). Não usar junto com date ou periodDays. */
+  month?: string
 }
 
 export interface StartTimeRecordResponse {
@@ -197,18 +207,41 @@ export async function getTimeRecords(date?: string, userId?: string): Promise<Ti
   return data
 }
 
-export async function getTimeSummary(date?: string, userId?: string): Promise<{ summary: TimeSummary }> {
-  const params = new URLSearchParams()
-  if (date) {
-    const formattedDate = date.includes("T") ? date.split("T")[0] : date
-    const cleanDate = formattedDate.split("+")[0].split("Z")[0]
-    params.append("date", cleanDate)
+function normalizeTimeSummaryParams(
+  paramsOrDate?: GetTimeSummaryParams | string,
+  userId?: string
+): GetTimeSummaryParams {
+  if (typeof paramsOrDate === "string") {
+    return { date: paramsOrDate, userId }
   }
-  if (userId) params.append("userId", userId)
-  const queryString = params.toString() ? `?${params.toString()}` : ""
+  return { ...paramsOrDate, ...(userId && { userId }) }
+}
+
+function buildTimeSummaryQueryString(opts: GetTimeSummaryParams): string {
+  const q = new URLSearchParams()
+
+  if (opts.date) {
+    const date = opts.date.includes("T") ? opts.date.split("T")[0] : opts.date
+    q.set("date", date.split("+")[0].split("Z")[0])
+  } else if (opts.periodDays != null) {
+    q.set("periodDays", String(opts.periodDays))
+  } else if (opts.month) {
+    q.set("month", opts.month.slice(0, 7))
+  }
+
+  if (opts.userId) q.set("userId", opts.userId)
+  const query = q.toString()
+  return query ? `?${query}` : ""
+}
+
+export async function getTimeSummary(
+  paramsOrDate?: GetTimeSummaryParams | string,
+  userId?: string
+): Promise<{ summary: TimeSummary }> {
+  const opts = normalizeTimeSummaryParams(paramsOrDate, userId)
+  const queryString = buildTimeSummaryQueryString(opts)
   const response = await authenticatedFetch(`/time-records/summary${queryString}`)
-  const data = await response.json()
-  return data
+  return response.json()
 }
 
 export interface User {
