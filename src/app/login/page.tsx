@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { login } from "@/lib/api"
+import { login, checkHealth } from "@/lib/api"
 import { Lock, Mail, Building2, AlertCircle, Loader2 } from "lucide-react"
 
 export default function Login() {
@@ -31,7 +31,9 @@ export default function Login() {
         localStorage.setItem("user", JSON.stringify(response.user))
       }
 
-      // Redirecionar para dashboard (vamos criar depois)
+      // Aquecer o banco em background (cold start); não bloqueia o redirect
+      checkHealth().catch(() => {})
+
       router.push("/dashboard")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login")

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { checkHealth } from "@/lib/api"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Building2, Users, Clock, Package, ArrowRight, LogOut } from "lucide-react"
@@ -38,6 +39,9 @@ export default function Dashboard() {
       const token = localStorage.getItem("token")
       if (!token) {
         router.push("/login")
+      } else {
+        // Aquecer o banco ao abrir o app já logado
+        checkHealth().catch(() => {})
       }
     }
   }, [router])

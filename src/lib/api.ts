@@ -1,5 +1,11 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"
 
+/** Timeout para listagem de produtos e ponto (start/stop/summary). Backend espera até 60s. */
+const API_TIMEOUT_MS = 30000
+/** Espera entre tentativas de retry (cold start do banco). */
+const RETRY_DELAY_MS = 1500
+const MAX_RETRIES = 2
+
 function getAuthToken(): string | null {
   if (typeof window === "undefined") return null
   return localStorage.getItem("token")
@@ -34,29 +40,56 @@ function getMessageByStatus(status: number): string {
   }
 }
 
+function isRetryableError(err: unknown): boolean {
+  if (err instanceof ApiError) {
+    if (err.statusCode === 0) return true
+    if (err.statusCode >= 500) return true
+    return false
+  }
+  if (err instanceof Error && err.name === "AbortError") return true
+  if (err instanceof TypeError && err.message.includes("fetch")) return true
+  return false
+}
+
 async function authenticatedFetch(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  timeoutMs?: number
 ): Promise<Response> {
   const token = getAuthToken()
+  const url = `${API_BASE_URL}${endpoint}`
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options.headers,
+  }
+
   let response: Response
+  let controller: AbortController | undefined
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+
+  if (timeoutMs != null && timeoutMs > 0) {
+    controller = new AbortController()
+    timeoutId = setTimeout(() => controller!.abort(), timeoutMs)
+  }
 
   try {
-    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    response = await fetch(url, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
+      headers,
+      ...(controller && { signal: controller.signal }),
     })
   } catch (err) {
+    if (timeoutId) clearTimeout(timeoutId)
+    if (err instanceof Error && err.name === "AbortError") throw err
     const message =
       err instanceof TypeError && err.message.includes("fetch")
         ? "Não foi possível conectar ao servidor. Verifique sua internet ou tente mais tarde."
         : "Erro na requisição. Tente novamente."
     throw new ApiError(message, 0)
   }
+
+  if (timeoutId) clearTimeout(timeoutId)
 
   if (!response.ok) {
     const statusMessage = getMessageByStatus(response.status)
@@ -70,6 +103,25 @@ async function authenticatedFetch(
   }
 
   return response
+}
+
+/** Requisição autenticada com timeout e retry (rede/timeout/5xx). Para produtos e ponto. */
+async function authenticatedFetchWithRetry(
+  endpoint: string,
+  options: RequestInit = {},
+  timeoutMs: number = API_TIMEOUT_MS
+): Promise<Response> {
+  let lastErr: unknown
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await authenticatedFetch(endpoint, options, timeoutMs)
+    } catch (e) {
+      lastErr = e
+      if (attempt === MAX_RETRIES || !isRetryableError(e)) throw e
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS))
+    }
+  }
+  throw lastErr
 }
 
 
@@ -106,6 +158,19 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
   }
 
   return response.json()
+}
+
+/** Chama GET /health para aquecer o banco (cold start). Rota pública. Não bloqueia o app em caso de falha. */
+export async function checkHealth(): Promise<void> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 25000)
+  try {
+    await fetch(`${API_BASE_URL}/health`, { signal: controller.signal })
+  } catch {
+    // Ignora; as telas que precisam de dados usam retry
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }
 
 // ========== SISTEMA DE PONTO ==========
@@ -177,7 +242,7 @@ export interface TimeRecordsResponse {
 
 // Iniciar trabalho
 export async function startTimeRecord(): Promise<StartTimeRecordResponse> {
-  const response = await authenticatedFetch("/time-records/start", {
+  const response = await authenticatedFetchWithRetry("/time-records/start", {
     method: "POST",
   })
   return response.json()
@@ -185,7 +250,7 @@ export async function startTimeRecord(): Promise<StartTimeRecordResponse> {
 
 // Parar trabalho
 export async function stopTimeRecord(): Promise<StopTimeRecordResponse> {
-  const response = await authenticatedFetch("/time-records/stop", {
+  const response = await authenticatedFetchWithRetry("/time-records/stop", {
     method: "POST",
   })
   return response.json()
@@ -202,7 +267,7 @@ export async function getTimeRecords(date?: string, userId?: string): Promise<Ti
   }
   if (userId) params.append("userId", userId)
   const queryString = params.toString() ? `?${params.toString()}` : ""
-  const response = await authenticatedFetch(`/time-records${queryString}`)
+  const response = await authenticatedFetchWithRetry(`/time-records${queryString}`)
   const data = await response.json()
   return data
 }
@@ -240,7 +305,7 @@ export async function getTimeSummary(
 ): Promise<{ summary: TimeSummary }> {
   const opts = normalizeTimeSummaryParams(paramsOrDate, userId)
   const queryString = buildTimeSummaryQueryString(opts)
-  const response = await authenticatedFetch(`/time-records/summary${queryString}`)
+  const response = await authenticatedFetchWithRetry(`/time-records/summary${queryString}`)
   return response.json()
 }
 
@@ -357,7 +422,7 @@ export async function getProducts(params?: GetProductsParams): Promise<ProductsR
   if (params?.page !== undefined) searchParams.append("page", params.page.toString())
   if (params?.limit !== undefined) searchParams.append("limit", params.limit.toString())
   const queryString = searchParams.toString() ? `?${searchParams.toString()}` : ""
-  const response = await authenticatedFetch(`/products${queryString}`)
+  const response = await authenticatedFetchWithRetry(`/products${queryString}`)
   return response.json()
 }
 
