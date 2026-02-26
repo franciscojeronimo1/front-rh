@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -46,7 +46,9 @@ type ProductFormValues = z.infer<typeof productSchema>
 export default function EditarProdutoPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const productId = params.id as string
+  const returnUrl = searchParams.get("from") || "/estoque/produtos"
 
   const [product, setProduct] = useState<Product | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -102,7 +104,7 @@ export default function EditarProdutoPage() {
       }
 
       await updateProduct(productId, requestData)
-      router.push("/estoque/produtos")
+      router.push(returnUrl)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao atualizar produto")
     } finally {
@@ -142,7 +144,7 @@ export default function EditarProdutoPage() {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => router.push("/estoque/produtos")}
+            onClick={() => router.push(returnUrl)}
             className="h-10 w-10"
           >
             <ArrowLeft className="h-4 w-4" />

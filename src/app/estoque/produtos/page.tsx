@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useCallback } from "react"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,17 +49,34 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const LIMIT_OPTIONS = [10, 20, 30] as const
+const SEARCH_DEBOUNCE_MS = 400
+
+function buildListQuery(params: { page?: number; limit?: number; category?: string; active?: string; q?: string }) {
+  const sp = new URLSearchParams()
+  if (params.page != null && params.page > 1) sp.set("page", String(params.page))
+  if (params.limit != null && params.limit !== 10) sp.set("limit", String(params.limit))
+  if (params.category && params.category !== "all") sp.set("category", params.category)
+  if (params.active && params.active !== "all") sp.set("active", params.active)
+  if (params.q?.trim()) sp.set("q", params.q.trim())
+  const qs = sp.toString()
+  return qs ? `?${qs}` : ""
+}
 
 export default function ProdutosPage() {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1)
+  const limit = Math.min(100, parseInt(searchParams.get("limit") ?? "10", 10) || 10)
+  const categoryFilter = searchParams.get("category") ?? "all"
+  const activeFilter = searchParams.get("active") ?? "all"
+  const searchFromUrl = searchParams.get("q") ?? ""
+
   const [products, setProducts] = useState<Product[]>([])
   const [pagination, setPagination] = useState<PaginationInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [categoryFilter, setCategoryFilter] = useState<string>("all")
-  const [activeFilter, setActiveFilter] = useState<string>("all")
-  const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState<number>(10)
+  const [searchTerm, setSearchTerm] = useState(searchFromUrl)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -67,6 +84,24 @@ export default function ProdutosPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [pageInputValue, setPageInputValue] = useState("")
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+
+  const updateListUrl = useCallback(
+    (updates: { page?: number; limit?: number; category?: string; active?: string; q?: string }) => {
+      const next = buildListQuery({
+        page: updates.page ?? page,
+        limit: updates.limit ?? limit,
+        category: updates.category ?? categoryFilter,
+        active: updates.active ?? activeFilter,
+        q: updates.q !== undefined ? updates.q : searchFromUrl,
+      })
+      router.replace(pathname + next, { scroll: false })
+    },
+    [pathname, router, page, limit, categoryFilter, activeFilter, searchFromUrl]
+  )
+
+  useEffect(() => {
+    setSearchTerm((prev) => (prev !== searchFromUrl ? searchFromUrl : prev))
+  }, [searchFromUrl])
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -107,9 +142,9 @@ export default function ProdutosPage() {
 
   useEffect(() => {
     if (!isLoading && products.length === 0 && pagination && pagination.page > 1) {
-      setPage(1)
+      updateListUrl({ page: 1 })
     }
-  }, [isLoading, products.length, pagination])
+  }, [isLoading, products.length, pagination, updateListUrl])
 
   useEffect(() => {
     if (pagination) {
@@ -117,19 +152,26 @@ export default function ProdutosPage() {
     }
   }, [pagination?.page])
 
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (searchTerm !== searchFromUrl) {
+        updateListUrl({ q: searchTerm, page: 1 })
+      }
+    }, SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [searchTerm, searchFromUrl, updateListUrl])
+
   const handleLimitChange = (value: string) => {
-    setLimit(Number(value))
-    setPage(1)
+    const n = Number(value)
+    updateListUrl({ limit: n, page: 1 })
   }
 
   const handleCategoryChange = (value: string) => {
-    setCategoryFilter(value)
-    setPage(1)
+    updateListUrl({ category: value, page: 1 })
   }
 
   const handleActiveChange = (value: string) => {
-    setActiveFilter(value)
-    setPage(1)
+    updateListUrl({ active: value, page: 1 })
   }
 
   const goToPage = (value: string) => {
@@ -139,7 +181,7 @@ export default function ProdutosPage() {
       setPageInputValue(pagination.page.toString())
       return
     }
-    setPage(num)
+    updateListUrl({ page: num })
     setPageInputValue(num.toString())
   }
 
@@ -161,11 +203,13 @@ export default function ProdutosPage() {
     }
   }
 
+  const filterSearchTerm = searchTerm.trim().toLowerCase()
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+      !filterSearchTerm ||
+      product.name.toLowerCase().includes(filterSearchTerm) ||
+      product.code?.toLowerCase().includes(filterSearchTerm) ||
+      product.sku?.toLowerCase().includes(filterSearchTerm)
     const matchesActive =
       activeFilter === "all" ||
       (activeFilter === "true" && product.active) ||
@@ -368,7 +412,16 @@ export default function ProdutosPage() {
                             <Button
                               variant="outline"
                               size="icon"
-                              onClick={() => router.push(`/estoque/produtos/${product.id}`)}
+                              onClick={() => {
+                                const returnUrl = pathname + buildListQuery({
+                                  page,
+                                  limit,
+                                  category: categoryFilter,
+                                  active: activeFilter,
+                                  q: searchTerm.trim() || undefined,
+                                })
+                                router.push(`/estoque/produtos/${product.id}?from=${encodeURIComponent(returnUrl)}`)
+                              }}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -414,7 +467,7 @@ export default function ProdutosPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    onClick={() => updateListUrl({ page: Math.max(1, page - 1) })}
                     disabled={!pagination.hasPrev}
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
@@ -423,7 +476,7 @@ export default function ProdutosPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                    onClick={() => updateListUrl({ page: Math.min(pagination.totalPages, page + 1) })}
                     disabled={!pagination.hasNext}
                   >
                     Próxima
