@@ -51,7 +51,7 @@ export default function Login() {
             <Building2 className="w-8 h-8" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Sistema RH
+            Sistema CGS
           </h1>
           <p className="text-muted-foreground">
             Gerencie sua empresa de forma profissional
@@ -136,7 +136,7 @@ export default function Login() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>© 2026 Sistema RH. Todos os direitos reservados.</p>
+          <p>© 2026 Sistema CGS. Todos os direitos reservados.</p>
         </div>
       </div>
     </div>

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sistema RH",
+  title: "Sistema CGS",
   description: "Sistema de gestão empresarial",
 };
 
