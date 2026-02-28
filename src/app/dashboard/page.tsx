@@ -164,20 +164,41 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-60">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-primary" />
-                Administração
-              </CardTitle>
-              <CardDescription>
-                Configurações do sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">Em breve</p>
-            </CardContent>
-          </Card>
+          {user?.role === "ADMIN" ? (
+            <Link href="/administracao">
+              <Card className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-primary" />
+                    Administração
+                  </CardTitle>
+                  <CardDescription>
+                    Configurações do sistema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full hover:cursor-pointer">
+                    Acessar <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </Link>
+          ) : (
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-60">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-primary" />
+                  Administração
+                </CardTitle>
+                <CardDescription>
+                  Configurações do sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">Apenas para administradores</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <Card className="mt-8">

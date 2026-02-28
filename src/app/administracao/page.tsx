@@ -1,0 +1,551 @@
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Building2,
+  ArrowLeft,
+  UserPlus,
+  Pencil,
+  Trash2,
+  Loader2,
+  AlertCircle,
+  Users,
+} from "lucide-react"
+import {
+  getUsers,
+  createStaff,
+  updateUser,
+  deleteUser,
+  ApiError,
+  type User,
+  type CreateStaffRequest,
+} from "@/lib/api"
+
+const MAX_STAFF = 5
+
+export default function AdministracaoPage() {
+  const router = useRouter()
+  const [users, setUsers] = useState<User[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [userToEdit, setUserToEdit] = useState<User | null>(null)
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
+
+  const [createForm, setCreateForm] = useState<CreateStaffRequest>({
+    name: "",
+    email: "",
+    password: "",
+  })
+  const [editForm, setEditForm] = useState<{ name: string; email: string; password: string }>({
+    name: "",
+    email: "",
+    password: "",
+  })
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleUnauthorized = useCallback(() => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token")
+      localStorage.removeItem("user")
+    }
+    router.push("/login")
+  }, [router])
+
+  const loadUsers = async () => {
+    try {
+      setIsLoading(true)
+      setError("")
+      const response = await getUsers()
+      const staffUsers = response.users.filter((u) => u.role === "STAFF")
+      setUsers(staffUsers)
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        handleUnauthorized()
+        return
+      }
+      setError(err instanceof Error ? err.message : "Erro ao carregar colaboradores")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token")
+      const userStr = localStorage.getItem("user")
+
+      if (!token) {
+        router.push("/login")
+        return
+      }
+
+      if (userStr) {
+        const user = JSON.parse(userStr)
+        if (user.role !== "ADMIN") {
+          router.push("/dashboard")
+          return
+        }
+      }
+    }
+    loadUsers()
+  }, [router])
+
+  const staffCount = users.length
+  const canCreateMore = staffCount < MAX_STAFF
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setSuccess("")
+
+    if (createForm.name.length < 3) {
+      setError("Nome deve ter no mínimo 3 caracteres")
+      return
+    }
+    if (createForm.password.length < 6) {
+      setError("Senha deve ter no mínimo 6 caracteres")
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      await createStaff(createForm)
+      setSuccess("Colaborador criado com sucesso!")
+      setCreateForm({ name: "", email: "", password: "" })
+      setCreateDialogOpen(false)
+      await loadUsers()
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        handleUnauthorized()
+        return
+      }
+      setError(err instanceof Error ? err.message : "Erro ao criar colaborador")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const openEditDialog = (user: User) => {
+    setUserToEdit(user)
+    setEditForm({ name: user.name, email: user.email, password: "" })
+    setEditDialogOpen(true)
+    setError("")
+  }
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userToEdit) return
+    setError("")
+    setSuccess("")
+
+    if (editForm.name.length < 3) {
+      setError("Nome deve ter no mínimo 3 caracteres")
+      return
+    }
+    if (editForm.password && editForm.password.length < 6) {
+      setError("Senha deve ter no mínimo 6 caracteres (deixe em branco para não alterar)")
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      const payload: { name?: string; email?: string; password?: string } = {
+        name: editForm.name,
+        email: editForm.email,
+      }
+      if (editForm.password.trim()) {
+        payload.password = editForm.password
+      }
+      await updateUser(userToEdit.id, payload)
+      setSuccess("Colaborador atualizado com sucesso!")
+      setEditDialogOpen(false)
+      setUserToEdit(null)
+      await loadUsers()
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        handleUnauthorized()
+        return
+      }
+      setError(err instanceof Error ? err.message : "Erro ao atualizar colaborador")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const openDeleteDialog = (user: User) => {
+    setUserToDelete(user)
+    setDeleteDialogOpen(true)
+    setError("")
+  }
+
+  const handleDelete = async () => {
+    if (!userToDelete) return
+    setError("")
+    setSuccess("")
+
+    try {
+      setIsSubmitting(true)
+      await deleteUser(userToDelete.id)
+      setSuccess("Colaborador removido com sucesso!")
+      setDeleteDialogOpen(false)
+      setUserToDelete(null)
+      await loadUsers()
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        handleUnauthorized()
+        return
+      }
+      setError(err instanceof Error ? err.message : "Erro ao remover colaborador")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background p-4 md:p-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Link href="/dashboard" className="block">
+          <Button
+            variant="default"
+            size="lg"
+            className="gap-3 h-14 px-8 text-lg font-bold shadow-lg hover:shadow-xl transition-all w-full sm:w-auto hover:cursor-pointer"
+          >
+            <ArrowLeft className="h-6 w-6" />
+            Voltar ao Dashboard
+          </Button>
+        </Link>
+
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
+            <Building2 className="w-8 h-8 text-primary" />
+            Administração
+          </h1>
+          <p className="text-muted-foreground">
+            Gerencie os colaboradores do sistema (máximo de {MAX_STAFF} por conta admin)
+          </p>
+        </div>
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {success && (
+          <Alert className="border-success bg-success/10 text-success">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{success}</AlertDescription>
+          </Alert>
+        )}
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                Colaboradores
+              </CardTitle>
+              <CardDescription>
+                {staffCount} de {MAX_STAFF} colaboradores cadastrados
+              </CardDescription>
+            </div>
+            <Button
+              onClick={() => {
+                setCreateForm({ name: "", email: "", password: "" })
+                setError("")
+                setCreateDialogOpen(true)
+              }}
+              disabled={!canCreateMore}
+              className="gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Novo Colaborador
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {!canCreateMore && (
+              <Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Limite de colaboradores atingido. Máximo de {MAX_STAFF} por conta admin.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {users.length === 0 ? (
+              <div className="py-12 text-center">
+                <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground text-lg mb-2">Nenhum colaborador cadastrado</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Clique em &quot;Novo Colaborador&quot; para adicionar o primeiro
+                </p>
+                <Button
+                  onClick={() => {
+                    setCreateForm({ name: "", email: "", password: "" })
+                    setCreateDialogOpen(true)
+                  }}
+                  className="gap-2"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Novo Colaborador
+                </Button>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => openEditDialog(user)}
+                            title="Editar"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => openDeleteDialog(user)}
+                            title="Excluir"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Dialog Criar */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Colaborador</DialogTitle>
+            <DialogDescription>
+              Preencha os dados. O colaborador poderá fazer login com o email e senha informados.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="create-name">Nome</Label>
+              <Input
+                id="create-name"
+                value={createForm.name}
+                onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))}
+                placeholder="Nome completo"
+                minLength={3}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-email">Email</Label>
+              <Input
+                id="create-email"
+                type="email"
+                value={createForm.email}
+                onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
+                placeholder="email@exemplo.com"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-password">Senha</Label>
+              <Input
+                id="create-password"
+                type="password"
+                value={createForm.password}
+                onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
+                placeholder="Mínimo 6 caracteres"
+                minLength={6}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Criando...
+                  </>
+                ) : (
+                  "Criar"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Editar */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Colaborador</DialogTitle>
+            <DialogDescription>
+              Altere os dados. Deixe a senha em branco para não alterá-la.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Nome</Label>
+              <Input
+                id="edit-name"
+                value={editForm.name}
+                onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                placeholder="Nome completo"
+                minLength={3}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+                placeholder="email@exemplo.com"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-password">Nova senha (opcional)</Label>
+              <Input
+                id="edit-password"
+                type="password"
+                value={editForm.password}
+                onChange={(e) => setEditForm((p) => ({ ...p, password: e.target.value }))}
+                placeholder="Deixe em branco para não alterar"
+                minLength={6}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Excluir */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir Colaborador</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir <strong>{userToDelete?.name}</strong> (
+              {userToDelete?.email})? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Excluindo...
+                </>
+              ) : (
+                "Excluir"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
