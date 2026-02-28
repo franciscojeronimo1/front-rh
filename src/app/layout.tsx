@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Sistema CGS",
   description: "Sistema de gestão empresarial",
+  icons: {
+    icon: "/icone.ico",
+  },
 };
 
 export default function RootLayout({
