@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useRequirePremium } from "@/hooks/useRequirePremium"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -49,6 +50,7 @@ type FilterMode = TimeSummaryFilterMode
 
 export default function ColaboradoresPage() {
   const router = useRouter()
+  const { isPremium, isLoading: isLoadingPremium } = useRequirePremium()
   const [users, setUsers] = useState<User[]>([])
   const [filterMode, setFilterMode] = useState<FilterMode>("day")
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -84,6 +86,14 @@ export default function ColaboradoresPage() {
       }
     }
   }, [router])
+
+  if (isLoadingPremium || !isPremium) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   const handleUnauthorized = useCallback(() => {
     if (typeof window !== "undefined") {

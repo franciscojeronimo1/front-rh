@@ -14,14 +14,18 @@ function getAuthToken(): string | null {
 export class ApiError extends Error {
   constructor(
     message: string,
-    public readonly statusCode: number
+    public readonly statusCode: number,
+    public readonly code?: string
   ) {
     super(message)
     this.name = "ApiError"
   }
 }
 
-function getMessageByStatus(status: number): string {
+function getMessageByStatus(status: number, code?: string): string {
+  if (status === 403 && code === "SUBSCRIPTION_REQUIRED") {
+    return "Plano Premium necessário. Faça upgrade na tela de Administração."
+  }
   switch (status) {
     case 401:
       return "Sessão expirada ou inválida. Faça login novamente."
@@ -92,14 +96,13 @@ async function authenticatedFetch(
   if (timeoutId) clearTimeout(timeoutId)
 
   if (!response.ok) {
-    const statusMessage = getMessageByStatus(response.status)
-    const error = await response.json().catch(() => ({
-      message: statusMessage,
-    }))
+    const error = await response.json().catch(() => ({}))
+    const code = error?.code && typeof error.code === "string" ? error.code : undefined
+    const statusMessage = getMessageByStatus(response.status, code)
     const message = error?.message && typeof error.message === "string"
       ? error.message
       : statusMessage
-    throw new ApiError(message, response.status)
+    throw new ApiError(message, response.status, code)
   }
 
   return response
@@ -377,6 +380,22 @@ export async function deleteUser(id: string): Promise<{ message: string }> {
   const response = await authenticatedFetch(`/users/${id}`, {
     method: "DELETE",
   })
+  return response.json()
+}
+
+// ========== ASSINATURA / PREMIUM ==========
+
+export type Plan = "FREE" | "PREMIUM"
+export type SubscriptionStatus = "ACTIVE" | "CANCELLED" | "EXPIRED" | "TRIAL"
+
+export interface Subscription {
+  plan: Plan
+  status: SubscriptionStatus
+  isPremium: boolean
+}
+
+export async function getSubscription(): Promise<Subscription> {
+  const response = await authenticatedFetch("/subscription")
   return response.json()
 }
 

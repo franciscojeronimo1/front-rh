@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useRequirePremium } from "@/hooks/useRequirePremium"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -32,6 +33,7 @@ import { ptBR } from "date-fns/locale"
 
 export default function PontoPage() {
   const router = useRouter()
+  const { isPremium, isLoading: isLoadingPremium } = useRequirePremium()
   const [summary, setSummary] = useState<TimeSummary | null>(null)
   const [records, setRecords] = useState<TimeRecord[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -47,6 +49,14 @@ export default function PontoPage() {
       }
     }
   }, [router])
+
+  if (isLoadingPremium || !isPremium) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   useEffect(() => {
     loadData()

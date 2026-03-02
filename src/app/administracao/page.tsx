@@ -33,6 +33,8 @@ import {
   Loader2,
   AlertCircle,
   Users,
+  Crown,
+  Sparkles,
 } from "lucide-react"
 import {
   getUsers,
@@ -43,6 +45,7 @@ import {
   type User,
   type CreateStaffRequest,
 } from "@/lib/api"
+import { useSubscription } from "@/hooks/useSubscription"
 
 const MAX_STAFF = 5
 
@@ -71,6 +74,8 @@ export default function AdministracaoPage() {
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const { subscription, isPremium, isLoading: isLoadingSubscription } = useSubscription()
 
   const handleUnauthorized = useCallback(() => {
     if (typeof window !== "undefined") {
@@ -278,6 +283,62 @@ export default function AdministracaoPage() {
             <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
+
+        {/* Card de Assinatura */}
+        <Card className={isPremium ? "border-amber-500/50 bg-amber-500/5" : ""}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                {isPremium ? (
+                  <Crown className="w-5 h-5 text-amber-500" />
+                ) : (
+                  <Sparkles className="w-5 h-5 text-primary" />
+                )}
+                Assinatura
+              </CardTitle>
+              <CardDescription>
+                {isLoadingSubscription ? (
+                  "Carregando..."
+                ) : isPremium ? (
+                  "Plano Premium ativo — acesso completo ao sistema"
+                ) : (
+                  "Plano gratuito — upgrade para desbloquear todas as funcionalidades"
+                )}
+              </CardDescription>
+            </div>
+            {!isLoadingSubscription && (
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
+                    isPremium
+                      ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {subscription?.plan === "PREMIUM" ? "Premium" : "Gratuito"}
+                </span>
+                {!isPremium && (
+                  <Button
+                    variant="default"
+                    className="gap-2"
+                    disabled
+                    title="Integração Stripe em breve"
+                  >
+                    <Crown className="h-4 w-4" />
+                    Fazer upgrade (em breve)
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardHeader>
+          {!isLoadingSubscription && !isPremium && (
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                O pagamento via Stripe será habilitado em breve. Com o plano Premium você terá acesso a: ponto eletrônico, colaboradores, estoque, categorias, produtos e todas as demais funcionalidades.
+              </p>
+            </CardContent>
+          )}
+        </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
