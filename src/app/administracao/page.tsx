@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -41,6 +41,7 @@ import {
   createStaff,
   updateUser,
   deleteUser,
+  createCheckoutSession,
   ApiError,
   type User,
   type CreateStaffRequest,
@@ -74,8 +75,39 @@ export default function AdministracaoPage() {
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false)
 
-  const { subscription, isPremium, isLoading: isLoadingSubscription } = useSubscription()
+  const searchParams = useSearchParams()
+  const { subscription, isPremium, isLoading: isLoadingSubscription, refetch: refetchSubscription } = useSubscription()
+
+  const showSuccessMessage = searchParams.get("success") === "1"
+
+  useEffect(() => {
+    if (showSuccessMessage) {
+      refetchSubscription()
+    }
+  }, [showSuccessMessage, refetchSubscription])
+
+  const handleUpgrade = async () => {
+    setError("")
+    try {
+      setIsCheckoutLoading(true)
+      const { url } = await createCheckoutSession()
+      if (url) {
+        window.location.href = url
+      } else {
+        setError("Não foi possível iniciar o checkout. Tente novamente.")
+      }
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        handleUnauthorized()
+        return
+      }
+      setError(err instanceof Error ? err.message : "Erro ao iniciar checkout")
+    } finally {
+      setIsCheckoutLoading(false)
+    }
+  }
 
   const handleUnauthorized = useCallback(() => {
     if (typeof window !== "undefined") {
@@ -277,10 +309,14 @@ export default function AdministracaoPage() {
           </Alert>
         )}
 
-        {success && (
+        {(success || showSuccessMessage) && (
           <Alert className="border-success bg-success/10 text-success">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{success}</AlertDescription>
+            <AlertDescription>
+              {showSuccessMessage
+                ? "Pagamento realizado com sucesso! Seu plano Premium está ativo."
+                : success}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -321,11 +357,20 @@ export default function AdministracaoPage() {
                   <Button
                     variant="default"
                     className="gap-2"
-                    disabled
-                    title="Integração Stripe em breve"
+                    onClick={handleUpgrade}
+                    disabled={isCheckoutLoading}
                   >
-                    <Crown className="h-4 w-4" />
-                    Fazer upgrade (em breve)
+                    {isCheckoutLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Redirecionando...
+                      </>
+                    ) : (
+                      <>
+                        <Crown className="h-4 w-4" />
+                        Fazer upgrade
+                      </>
+                    )}
                   </Button>
                 )}
               </div>
@@ -334,7 +379,7 @@ export default function AdministracaoPage() {
           {!isLoadingSubscription && !isPremium && (
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                O pagamento via Stripe será habilitado em breve. Com o plano Premium você terá acesso a: ponto eletrônico, colaboradores, estoque, categorias, produtos e todas as demais funcionalidades.
+                Com o plano Premium você terá acesso a: ponto eletrônico, colaboradores, estoque, categorias, produtos e todas as demais funcionalidades.
               </p>
             </CardContent>
           )}

@@ -389,13 +389,29 @@ export type Plan = "FREE" | "PREMIUM"
 export type SubscriptionStatus = "ACTIVE" | "CANCELLED" | "EXPIRED" | "TRIAL"
 
 export interface Subscription {
+  id?: string
   plan: Plan
   status: SubscriptionStatus
   isPremium: boolean
+  message?: string
+  startedAt?: string
+  expiresAt?: string
 }
 
 export async function getSubscription(): Promise<Subscription> {
   const response = await authenticatedFetch("/subscription")
+  return response.json()
+}
+
+export interface CreateCheckoutSessionResponse {
+  url: string
+  sessionId: string
+}
+
+export async function createCheckoutSession(): Promise<CreateCheckoutSessionResponse> {
+  const response = await authenticatedFetch("/subscription/checkout", {
+    method: "POST",
+  })
   return response.json()
 }
 
