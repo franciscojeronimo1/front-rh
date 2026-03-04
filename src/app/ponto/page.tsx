@@ -50,27 +50,6 @@ export default function PontoPage() {
     }
   }, [router])
 
-  if (isLoadingPremium || !isPremium) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
-
-  useEffect(() => {
-    loadData()
-    
-    const handleFocus = () => {
-      loadData()
-    }
-    
-    window.addEventListener("focus", handleFocus)
-    return () => {
-      window.removeEventListener("focus", handleFocus)
-    }
-  }, [])
-
   const loadData = async () => {
     try {
       setIsLoadingData(true)
@@ -85,6 +64,23 @@ export default function PontoPage() {
     } finally {
       setIsLoadingData(false)
     }
+  }
+
+  useEffect(() => {
+    if (isPremium && !isLoadingPremium) {
+      loadData()
+      const handleFocus = () => loadData()
+      window.addEventListener("focus", handleFocus)
+      return () => window.removeEventListener("focus", handleFocus)
+    }
+  }, [isPremium, isLoadingPremium])
+
+  if (isLoadingPremium || !isPremium) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   const handleStart = async () => {
