@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -61,7 +61,7 @@ function formatSubscriptionDate(isoDate: string): string {
   }
 }
 
-export default function AdministracaoPage() {
+function AdministracaoContent() {
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -715,5 +715,22 @@ export default function AdministracaoPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export default function AdministracaoPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Carregando...</p>
+          </div>
+        </div>
+      }
+    >
+      <AdministracaoContent />
+    </Suspense>
   )
 }
