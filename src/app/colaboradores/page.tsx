@@ -68,6 +68,14 @@ export default function ColaboradoresPage() {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
+  const handleUnauthorized = useCallback(() => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token")
+      localStorage.removeItem("user")
+    }
+    router.push("/login")
+  }, [router])
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token")
@@ -87,6 +95,11 @@ export default function ColaboradoresPage() {
     }
   }, [router])
 
+  useEffect(() => {
+    if (isLoadingPremium || !isPremium) return
+    loadUsers()
+  }, [isLoadingPremium, isPremium])
+
   if (isLoadingPremium || !isPremium) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -94,18 +107,6 @@ export default function ColaboradoresPage() {
       </div>
     )
   }
-
-  const handleUnauthorized = useCallback(() => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token")
-      localStorage.removeItem("user")
-    }
-    router.push("/login")
-  }, [router])
-
-  useEffect(() => {
-    loadUsers()
-  }, [])
 
   const loadUsers = async () => {
     try {
