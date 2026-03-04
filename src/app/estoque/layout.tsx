@@ -1,22 +1,11 @@
-"use client"
+import EstoqueGuard from "./EstoqueGuard"
 
-import { useRequirePremium } from "@/hooks/useRequirePremium"
-import { Loader2 } from "lucide-react"
+export const dynamic = "force-dynamic"
 
 export default function EstoqueLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { isPremium, isLoading } = useRequirePremium()
-
-  if (isLoading || !isPremium) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
-
-  return <>{children}</>
+  return <EstoqueGuard>{children}</EstoqueGuard>
 }
