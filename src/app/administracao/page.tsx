@@ -35,6 +35,7 @@ import {
   Users,
   Crown,
   Sparkles,
+  Settings,
 } from "lucide-react"
 import {
   getUsers,
@@ -42,6 +43,7 @@ import {
   updateUser,
   deleteUser,
   createCheckoutSession,
+  createPortalSession,
   ApiError,
   type User,
   type CreateStaffRequest,
@@ -49,6 +51,15 @@ import {
 import { useSubscription } from "@/hooks/useSubscription"
 
 const MAX_STAFF = 5
+
+function formatSubscriptionDate(isoDate: string): string {
+  try {
+    const d = new Date(isoDate)
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+  } catch {
+    return isoDate
+  }
+}
 
 export default function AdministracaoPage() {
   const router = useRouter()
@@ -76,6 +87,7 @@ export default function AdministracaoPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false)
+  const [isPortalLoading, setIsPortalLoading] = useState(false)
 
   const searchParams = useSearchParams()
   const { subscription, isPremium, isLoading: isLoadingSubscription, refetch: refetchSubscription } = useSubscription()
@@ -106,6 +118,27 @@ export default function AdministracaoPage() {
       setError(err instanceof Error ? err.message : "Erro ao iniciar checkout")
     } finally {
       setIsCheckoutLoading(false)
+    }
+  }
+
+  const handleOpenPortal = async () => {
+    setError("")
+    try {
+      setIsPortalLoading(true)
+      const { url } = await createPortalSession()
+      if (url) {
+        window.location.href = url
+      } else {
+        setError("Não foi possível abrir o portal. Tente novamente.")
+      }
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        handleUnauthorized()
+        return
+      }
+      setError(err instanceof Error ? err.message : "Erro ao abrir portal")
+    } finally {
+      setIsPortalLoading(false)
     }
   }
 
@@ -343,7 +376,7 @@ export default function AdministracaoPage() {
               </CardDescription>
             </div>
             {!isLoadingSubscription && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
                     isPremium
@@ -373,9 +406,38 @@ export default function AdministracaoPage() {
                     )}
                   </Button>
                 )}
+                {isPremium && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={handleOpenPortal}
+                    disabled={isPortalLoading}
+                  >
+                    {isPortalLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Redirecionando...
+                      </>
+                    ) : (
+                      <>
+                        <Settings className="h-4 w-4" />
+                        Gerenciar assinatura
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             )}
           </CardHeader>
+          {!isLoadingSubscription && isPremium && subscription?.expiresAt && (
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                {subscription.cancelAtPeriodEnd
+                  ? `Seu Premium expira em ${formatSubscriptionDate(subscription.expiresAt)} e não será renovado.`
+                  : `Próxima renovação em ${formatSubscriptionDate(subscription.expiresAt)}.`}
+              </p>
+            </CardContent>
+          )}
           {!isLoadingSubscription && !isPremium && (
             <CardContent>
               <p className="text-sm text-muted-foreground">

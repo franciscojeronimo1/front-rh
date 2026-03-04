@@ -396,6 +396,8 @@ export interface Subscription {
   message?: string
   startedAt?: string
   expiresAt?: string
+  trialEndsAt?: string | null
+  cancelAtPeriodEnd?: boolean
 }
 
 export async function getSubscription(): Promise<Subscription> {
@@ -410,6 +412,18 @@ export interface CreateCheckoutSessionResponse {
 
 export async function createCheckoutSession(): Promise<CreateCheckoutSessionResponse> {
   const response = await authenticatedFetch("/subscription/checkout", {
+    method: "POST",
+  })
+  return response.json()
+}
+
+export interface CreatePortalSessionResponse {
+  url: string
+}
+
+/** Retorna URL do Portal do Stripe (cancelar, atualizar cartão, etc.). Redirecione o usuário com window.location.href = url */
+export async function createPortalSession(): Promise<CreatePortalSessionResponse> {
+  const response = await authenticatedFetch("/subscription/portal", {
     method: "POST",
   })
   return response.json()
