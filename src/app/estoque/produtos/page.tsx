@@ -124,6 +124,7 @@ export default function ProdutosPage() {
       const response = await getProducts({
         category: categoryFilter === "all" ? undefined : categoryFilter,
         includeInactive,
+        search: searchFromUrl.trim() || undefined,
         page,
         limit,
       })
@@ -138,7 +139,7 @@ export default function ProdutosPage() {
 
   useEffect(() => {
     loadProducts()
-  }, [categoryFilter, activeFilter, page, limit])
+  }, [categoryFilter, activeFilter, searchFromUrl, page, limit])
 
   useEffect(() => {
     if (!isLoading && products.length === 0 && pagination && pagination.page > 1) {
@@ -203,18 +204,13 @@ export default function ProdutosPage() {
     }
   }
 
-  const filterSearchTerm = searchTerm.trim().toLowerCase()
+  // Busca é feita no backend (search). Filtro de status ativo/inativo ainda é local.
   const filteredProducts = products.filter((product) => {
-    const matchesSearch =
-      !filterSearchTerm ||
-      product.name.toLowerCase().includes(filterSearchTerm) ||
-      product.code?.toLowerCase().includes(filterSearchTerm) ||
-      product.sku?.toLowerCase().includes(filterSearchTerm)
     const matchesActive =
       activeFilter === "all" ||
       (activeFilter === "true" && product.active) ||
       (activeFilter === "false" && !product.active)
-    return matchesSearch && matchesActive
+    return matchesActive
   })
 
   const isLowStock = (product: Product) => product.currentStock < product.minStock
