@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   Loader2,
   RefreshCw,
+  History,
 } from "lucide-react"
 import {
   getTotalValue,
@@ -241,6 +242,23 @@ export default function EstoquePage() {
               <CardContent>
                 <Button variant="outline" className="w-full">
                   Ver Relatórios
+                </Button>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/estoque/movimentacoes">
+            <Card className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="w-5 h-5 text-primary" />
+                  Movimentações
+                </CardTitle>
+                <CardDescription>Histórico de entradas e saídas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full">
+                  Ver Histórico
                 </Button>
               </CardContent>
             </Card>

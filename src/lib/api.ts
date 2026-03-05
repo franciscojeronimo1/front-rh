@@ -868,3 +868,61 @@ export async function getTotalValue(): Promise<TotalValueResponse> {
   return response.json()
 }
 
+// ========== MOVIMENTAÇÕES DE ESTOQUE ==========
+
+export interface StockMovement {
+  id: string
+  type: "entry" | "exit"
+  product: {
+    id: string
+    name: string
+    code?: string | null
+  }
+  quantity: number
+  unitPrice: number
+  totalPrice: number
+  createdAt: string
+  registeredBy: {
+    id: string
+    name: string
+  }
+  notes?: string | null
+  supplierName?: string | null
+  invoiceNumber?: string | null
+  clientName?: string | null
+  projectName?: string | null
+}
+
+export interface GetStockMovementsParams {
+  dateFrom?: string
+  dateTo?: string
+  productId?: string
+  supplier?: string
+  client?: string
+  type?: "entry" | "exit"
+  page?: number
+  limit?: number
+}
+
+export interface StockMovementsResponse {
+  movements: StockMovement[]
+  pagination: PaginationInfo
+}
+
+export async function getStockMovements(
+  params?: GetStockMovementsParams
+): Promise<StockMovementsResponse> {
+  const searchParams = new URLSearchParams()
+  if (params?.dateFrom) searchParams.append("dateFrom", params.dateFrom)
+  if (params?.dateTo) searchParams.append("dateTo", params.dateTo)
+  if (params?.productId) searchParams.append("productId", params.productId)
+  if (params?.supplier) searchParams.append("supplier", params.supplier)
+  if (params?.client) searchParams.append("client", params.client)
+  if (params?.type) searchParams.append("type", params.type)
+  if (params?.page !== undefined) searchParams.append("page", params.page.toString())
+  if (params?.limit !== undefined) searchParams.append("limit", params.limit.toString())
+  const queryString = searchParams.toString() ? `?${searchParams.toString()}` : ""
+  const response = await authenticatedFetchWithRetry(`/stock/movements${queryString}`)
+  return response.json()
+}
+
