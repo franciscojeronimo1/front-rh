@@ -17,20 +17,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { ArrowLeft, Loader2, ArrowDown } from "lucide-react"
 import {
-  getProducts,
   createStockEntry,
-  type Product,
   type CreateStockEntryRequest,
 } from "@/lib/api"
+import { ProductCombobox } from "@/components/product-combobox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const entrySchema = z.object({
@@ -53,8 +45,6 @@ type EntryFormValues = z.infer<typeof entrySchema>
 
 export default function RegistrarEntradaPage() {
   const router = useRouter()
-  const [products, setProducts] = useState<Product[]>([])
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [totalPrice, setTotalPrice] = useState(0)
@@ -71,21 +61,6 @@ export default function RegistrarEntradaPage() {
       notes: "",
     },
   })
-
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        setIsLoadingProducts(true)
-        const response = await getProducts({ limit: 100 })
-        setProducts(response.products)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao carregar produtos")
-      } finally {
-        setIsLoadingProducts(false)
-      }
-    }
-    loadProducts()
-  }, [])
 
   const quantity = form.watch("quantity")
   const unitPrice = form.watch("unitPrice")
@@ -166,25 +141,14 @@ export default function RegistrarEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Produto *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isLoadingProducts}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um produto" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {products.map((product) => (
-                            <SelectItem key={product.id} value={product.id}>
-                              {product.name} {product.code && `(${product.code})`}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>Selecione o produto que está entrando</FormDescription>
+                      <FormControl>
+                        <ProductCombobox
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Digite para buscar produto..."
+                        />
+                      </FormControl>
+                      <FormDescription>Digite o nome ou código do produto que está entrando</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -335,7 +299,7 @@ export default function RegistrarEntradaPage() {
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={isSubmitting || isLoadingProducts}>
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />

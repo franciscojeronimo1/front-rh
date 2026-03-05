@@ -506,6 +506,8 @@ export interface GetProductsParams {
   category?: string
   /** Incluir produtos inativos. O backend usa includeInactive: true=ativos+inativos, false/omitido=apenas ativos */
   includeInactive?: boolean
+  /** Busca por nome, código ou SKU (case insensitive) */
+  search?: string
   page?: number
   limit?: number
 }
@@ -514,6 +516,7 @@ export async function getProducts(params?: GetProductsParams): Promise<ProductsR
   const searchParams = new URLSearchParams()
   if (params?.category) searchParams.append("category", params.category)
   if (params?.includeInactive === true) searchParams.append("includeInactive", "true")
+  if (params?.search) searchParams.append("search", params.search)
   if (params?.page !== undefined) searchParams.append("page", params.page.toString())
   if (params?.limit !== undefined) searchParams.append("limit", params.limit.toString())
   const queryString = searchParams.toString() ? `?${searchParams.toString()}` : ""

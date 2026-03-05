@@ -17,20 +17,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { ArrowLeft, Loader2, ArrowUp, AlertTriangle } from "lucide-react"
 import {
-  getProducts,
   createStockExit,
   type Product,
   type CreateStockExitRequest,
 } from "@/lib/api"
+import { ProductCombobox } from "@/components/product-combobox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const exitSchema = z.object({
@@ -57,9 +50,7 @@ type ExitFormValues = z.infer<typeof exitSchema>
 
 export default function RegistrarSaidaPage() {
   const router = useRouter()
-  const [products, setProducts] = useState<Product[]>([])
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [totalPricePreview, setTotalPricePreview] = useState(0)
@@ -77,33 +68,9 @@ export default function RegistrarSaidaPage() {
     },
   })
 
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        setIsLoadingProducts(true)
-        const response = await getProducts({ limit: 100 })
-        setProducts(response.products.filter((p) => p.currentStock > 0))
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao carregar produtos")
-      } finally {
-        setIsLoadingProducts(false)
-      }
-    }
-    loadProducts()
-  }, [])
-
   const productId = form.watch("productId")
   const quantity = form.watch("quantity")
   const unitPrice = form.watch("unitPrice")
-
-  useEffect(() => {
-    if (productId) {
-      const product = products.find((p) => p.id === productId)
-      setSelectedProduct(product || null)
-    } else {
-      setSelectedProduct(null)
-    }
-  }, [productId, products])
 
   useEffect(() => {
     const qty = parseFloat(quantity) || 0
@@ -197,26 +164,17 @@ export default function RegistrarSaidaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Produto *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isLoadingProducts}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um produto" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {products.map((product) => (
-                            <SelectItem key={product.id} value={product.id}>
-                              {product.name} {product.code && `(${product.code})`} - Estoque:{" "}
-                              {product.currentStock} {product.unit}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>Selecione o produto que está saindo</FormDescription>
+                      <FormControl>
+                        <ProductCombobox
+                          value={field.value}
+                          onChange={field.onChange}
+                          onProductSelect={setSelectedProduct}
+                          placeholder="Digite para buscar produto..."
+                          showStock
+                          onlyWithStock
+                        />
+                      </FormControl>
+                      <FormDescription>Digite o nome ou código do produto que está saindo</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -374,7 +332,7 @@ export default function RegistrarSaidaPage() {
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={isSubmitting || isLoadingProducts}>
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
