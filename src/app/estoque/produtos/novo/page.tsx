@@ -20,6 +20,7 @@ import {
 import { ArrowLeft, Loader2, PackagePlus } from "lucide-react"
 import { createProduct, type CreateProductRequest } from "@/lib/api"
 import { CategorySelect } from "@/components/category-select"
+import { ActiveToggle } from "@/components/ui/active-toggle"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const productSchema = z.object({
@@ -166,24 +167,44 @@ export default function NovoProdutoPage() {
                   />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Categoria</FormLabel>
-                      <FormControl>
-                        <CategorySelect
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Selecione uma categoria"
-                        />
-                      </FormControl>
-                      <FormDescription>Categoria do produto. Clique em + para criar uma nova</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Categoria</FormLabel>
+                        <FormControl>
+                          <CategorySelect
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Selecione uma categoria"
+                          />
+                        </FormControl>
+                        <FormDescription>Categoria do produto. Clique em + para criar uma nova</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="active"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Produto Ativo</FormLabel>
+                        <FormControl>
+                          <ActiveToggle
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
@@ -237,27 +258,6 @@ export default function NovoProdutoPage() {
                     )}
                   />
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="active"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">Produto Ativo</FormLabel>
-                        <FormDescription>Produtos inativos não aparecem nas listagens</FormDescription>
-                      </div>
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="h-4 w-4"
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
 
                 <div className="flex justify-end gap-4">
                   <Button

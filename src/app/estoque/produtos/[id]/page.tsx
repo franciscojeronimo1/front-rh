@@ -20,6 +20,7 @@ import {
 import { ArrowLeft, Loader2, Save } from "lucide-react"
 import { getProductById, updateProduct, type Product, type UpdateProductRequest } from "@/lib/api"
 import { CategorySelect } from "@/components/category-select"
+import { ActiveToggle } from "@/components/ui/active-toggle"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const productSchema = z.object({
@@ -339,11 +340,9 @@ export default function EditarProdutoPage() {
                         <FormDescription>Produtos inativos não aparecem nas listagens</FormDescription>
                       </div>
                       <FormControl>
-                        <input
-                          type="checkbox"
+                        <ActiveToggle
                           checked={field.value}
-                          onChange={field.onChange}
-                          className="h-4 w-4"
+                          onCheckedChange={field.onChange}
                         />
                       </FormControl>
                     </FormItem>
