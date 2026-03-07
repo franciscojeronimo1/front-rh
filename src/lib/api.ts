@@ -465,6 +465,7 @@ export interface UpdateProductRequest {
   sku?: string
   category?: string
   minStock?: number
+  currentStock?: number
   unit?: string
   costPrice?: number
   active?: boolean
