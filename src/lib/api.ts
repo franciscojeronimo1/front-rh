@@ -442,6 +442,7 @@ export interface Product {
   minStock: number
   unit: string
   costPrice?: string | null
+  salePrice?: string | null
   averageCost?: string | null
   active: boolean
   organizationId: string
@@ -457,6 +458,7 @@ export interface CreateProductRequest {
   minStock?: number
   unit?: string
   costPrice?: number
+  salePrice?: number
   active?: boolean
 }
 
@@ -469,6 +471,7 @@ export interface UpdateProductRequest {
   currentStock?: number
   unit?: string
   costPrice?: number
+  salePrice?: number
   active?: boolean
 }
 

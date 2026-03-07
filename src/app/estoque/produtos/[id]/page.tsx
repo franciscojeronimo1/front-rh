@@ -44,6 +44,11 @@ const productSchema = z.object({
     const num = parseFloat(val)
     return !isNaN(num) && num >= 0
   }, "Preço deve ser >= 0"),
+  salePrice: z.string().optional().refine((val) => {
+    if (!val || val === "") return true
+    const num = parseFloat(val)
+    return !isNaN(num) && num > 0
+  }, "Preço de venda deve ser maior que 0 quando informado"),
   active: z.boolean().optional(),
 })
 
@@ -80,6 +85,7 @@ export default function EditarProdutoPage() {
           currentStock: response.product.currentStock.toString(),
           unit: response.product.unit,
           costPrice: response.product.costPrice || "",
+          salePrice: response.product.salePrice || "",
           active: response.product.active,
         })
       } catch (err) {
@@ -112,6 +118,7 @@ export default function EditarProdutoPage() {
         currentStock: data.currentStock ? parseInt(data.currentStock, 10) : undefined,
         unit: data.unit,
         costPrice: data.costPrice ? parseFloat(data.costPrice) : undefined,
+        salePrice: data.salePrice ? parseFloat(data.salePrice) : undefined,
         active: data.active,
       }
 
@@ -257,7 +264,7 @@ export default function EditarProdutoPage() {
                   )}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <FormField
                     control={form.control}
                     name="minStock"
@@ -324,6 +331,27 @@ export default function EditarProdutoPage() {
                           />
                         </FormControl>
                         <FormDescription>Preço de custo unitário</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="salePrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preço de Venda</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>Preço de venda unitário (opcional)</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

@@ -73,6 +73,15 @@ export default function RegistrarSaidaPage() {
   const unitPrice = form.watch("unitPrice")
 
   useEffect(() => {
+    if (selectedProduct?.salePrice) {
+      const salePriceNum = parseFloat(selectedProduct.salePrice)
+      if (!isNaN(salePriceNum) && salePriceNum > 0) {
+        form.setValue("unitPrice", salePriceNum.toFixed(2))
+      }
+    }
+  }, [selectedProduct?.id, selectedProduct?.salePrice, form])
+
+  useEffect(() => {
     const qty = parseFloat(quantity) || 0
     const price = parseFloat(unitPrice || "") || 0
     if (qty > 0 && price > 0) {
