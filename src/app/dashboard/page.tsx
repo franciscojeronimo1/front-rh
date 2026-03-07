@@ -23,32 +23,22 @@ export default function Dashboard() {
   const showUpgradeMessage = searchParams.get("upgrade") === "1"
   const { isPremium, isLoading: isLoadingSubscription } = useSubscription()
 
-  // Função inicializadora que só executa no cliente
-  const [user] = useState<User | null>(() => {
-    if (typeof window === "undefined") return null
-    try {
-      const userData = localStorage.getItem("user")
-      return userData ? (JSON.parse(userData) as User) : null
-    } catch {
-      return null
-    }
-  })
-  const [isLoading] = useState(() => {
-    if (typeof window === "undefined") return true
-    const token = localStorage.getItem("token")
-    return !token
-  })
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Verificar se há token e redirecionar se necessário
-    if (typeof window !== "undefined") {
+    // Só executa no cliente - evita mismatch de hidratação
+    try {
       const token = localStorage.getItem("token")
+      const userData = localStorage.getItem("user")
+      setUser(userData ? (JSON.parse(userData) as User) : null)
       if (!token) {
         router.push("/login")
       } else {
-        // Aquecer o banco ao abrir o app já logado
         checkHealth().catch(() => {})
       }
+    } finally {
+      setIsLoading(false)
     }
   }, [router])
 
