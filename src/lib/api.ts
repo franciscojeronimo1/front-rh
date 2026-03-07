@@ -457,6 +457,7 @@ export interface CreateProductRequest {
   minStock?: number
   unit?: string
   costPrice?: number
+  active?: boolean
 }
 
 export interface UpdateProductRequest {

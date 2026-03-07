@@ -37,6 +37,7 @@ const productSchema = z.object({
     const num = parseFloat(val)
     return !isNaN(num) && num >= 0
   }, "Preço deve ser >= 0"),
+  active: z.boolean().optional(),
 })
 
 type ProductFormValues = z.infer<typeof productSchema>
@@ -56,6 +57,7 @@ export default function NovoProdutoPage() {
       minStock: "0",
       unit: "UN",
       costPrice: "",
+      active: true,
     },
   })
 
@@ -72,6 +74,7 @@ export default function NovoProdutoPage() {
         minStock: parseFloat(data.minStock) || 0,
         unit: data.unit,
         costPrice: data.costPrice ? parseFloat(data.costPrice) : undefined,
+        active: data.active ?? true,
       }
 
       await createProduct(requestData)
@@ -234,6 +237,27 @@ export default function NovoProdutoPage() {
                     )}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="active"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Produto Ativo</FormLabel>
+                        <FormDescription>Produtos inativos não aparecem nas listagens</FormDescription>
+                      </div>
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="h-4 w-4"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
 
                 <div className="flex justify-end gap-4">
                   <Button
