@@ -44,6 +44,14 @@ import {
 } from "@/lib/api"
 import { format, parse } from "date-fns"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ExportButtons } from "@/components/export-buttons"
+import {
+  buildLowStockRows,
+  buildDailyUsageRows,
+  buildWeeklyUsageRows,
+  buildCurrentStockRows,
+  buildTotalValueRows,
+} from "@/lib/export-utils"
 
 export default function RelatoriosPage() {
   const router = useRouter()
@@ -318,28 +326,35 @@ export default function RelatoriosPage() {
           <>
             {activeTab === "low" && lowStock && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-destructive" />
-                    Produtos com Estoque Baixo
-                  </CardTitle>
-                  <CardDescription>
-                    {lowStock.products.length === 0 ? (
-                      "Nenhum produto com estoque baixo"
-                    ) : lowStock.pagination ? (
-                      <>
-                        Mostrando{" "}
-                        {(lowStock.pagination.page - 1) * lowStock.pagination.limit + 1}-
-                        {Math.min(
-                          lowStock.pagination.page * lowStock.pagination.limit,
-                          lowStock.pagination.total
-                        )}{" "}
-                        de {lowStock.pagination.total} produto(s) abaixo do mínimo
-                      </>
-                    ) : (
-                      `${lowStock.products.length} produto(s) abaixo do estoque mínimo`
-                    )}
-                  </CardDescription>
+                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                      Produtos com Estoque Baixo
+                    </CardTitle>
+                    <CardDescription>
+                      {lowStock.products.length === 0 ? (
+                        "Nenhum produto com estoque baixo"
+                      ) : lowStock.pagination ? (
+                        <>
+                          Mostrando{" "}
+                          {(lowStock.pagination.page - 1) * lowStock.pagination.limit + 1}-
+                          {Math.min(
+                            lowStock.pagination.page * lowStock.pagination.limit,
+                            lowStock.pagination.total
+                          )}{" "}
+                          de {lowStock.pagination.total} produto(s) abaixo do mínimo
+                        </>
+                      ) : (
+                        `${lowStock.products.length} produto(s) abaixo do estoque mínimo`
+                      )}
+                    </CardDescription>
+                  </div>
+                  <ExportButtons
+                    rows={buildLowStockRows(lowStock)}
+                    filename="estoque-baixo"
+                    sheetName="Estoque Baixo"
+                  />
                 </CardHeader>
                 <CardContent>
                   {lowStock.products.length === 0 ? (
@@ -471,15 +486,22 @@ export default function RelatoriosPage() {
 
             {activeTab === "daily" && dailyUsage && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Uso Diário
-                  </CardTitle>
-                  <CardDescription>
-                    Uso de produtos no dia{" "}
-                    {format(parse(dailyDate, "yyyy-MM-dd", new Date()), "dd/MM/yyyy")}
-                  </CardDescription>
+                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Uso Diário
+                    </CardTitle>
+                    <CardDescription>
+                      Uso de produtos no dia{" "}
+                      {format(parse(dailyDate, "yyyy-MM-dd", new Date()), "dd/MM/yyyy")}
+                    </CardDescription>
+                  </div>
+                  <ExportButtons
+                    rows={buildDailyUsageRows(dailyUsage)}
+                    filename={`uso-diario-${dailyDate}`}
+                    sheetName="Uso Diário"
+                  />
                 </CardHeader>
                 <CardContent>
                   <div className="mb-4">
@@ -602,15 +624,22 @@ export default function RelatoriosPage() {
 
             {activeTab === "weekly" && weeklyUsage && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Uso Semanal
-                  </CardTitle>
-                  <CardDescription>
-                    De {format(parse(weeklyUsage.startDate, "yyyy-MM-dd", new Date()), "dd/MM/yyyy")}{" "}
-                    até {format(parse(weeklyUsage.endDate, "yyyy-MM-dd", new Date()), "dd/MM/yyyy")}
-                  </CardDescription>
+                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Uso Semanal
+                    </CardTitle>
+                    <CardDescription>
+                      De {format(parse(weeklyUsage.startDate, "yyyy-MM-dd", new Date()), "dd/MM/yyyy")}{" "}
+                      até {format(parse(weeklyUsage.endDate, "yyyy-MM-dd", new Date()), "dd/MM/yyyy")}
+                    </CardDescription>
+                  </div>
+                  <ExportButtons
+                    rows={buildWeeklyUsageRows(weeklyUsage)}
+                    filename={`uso-semanal-${weeklyUsage.startDate}`}
+                    sheetName="Uso Semanal"
+                  />
                 </CardHeader>
                 <CardContent>
                   <div className="mb-4">
@@ -733,25 +762,32 @@ export default function RelatoriosPage() {
 
             {activeTab === "current" && currentStock && (
               <Card>
-                <CardHeader>
-                  <CardTitle>Estoque Atual</CardTitle>
-                  <CardDescription>
-                    {currentStock.products.length === 0 ? (
-                      "Nenhum produto cadastrado"
-                    ) : currentStock.pagination ? (
-                      <>
-                        Mostrando{" "}
-                        {(currentStock.pagination.page - 1) * currentStock.pagination.limit + 1}-
-                        {Math.min(
-                          currentStock.pagination.page * currentStock.pagination.limit,
-                          currentStock.pagination.total
-                        )}{" "}
-                        de {currentStock.pagination.total} produto(s)
-                      </>
-                    ) : (
-                      "Lista completa de produtos e seus estoques atuais"
-                    )}
-                  </CardDescription>
+                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <CardTitle>Estoque Atual</CardTitle>
+                    <CardDescription>
+                      {currentStock.products.length === 0 ? (
+                        "Nenhum produto cadastrado"
+                      ) : currentStock.pagination ? (
+                        <>
+                          Mostrando{" "}
+                          {(currentStock.pagination.page - 1) * currentStock.pagination.limit + 1}-
+                          {Math.min(
+                            currentStock.pagination.page * currentStock.pagination.limit,
+                            currentStock.pagination.total
+                          )}{" "}
+                          de {currentStock.pagination.total} produto(s)
+                        </>
+                      ) : (
+                        "Lista completa de produtos e seus estoques atuais"
+                      )}
+                    </CardDescription>
+                  </div>
+                  <ExportButtons
+                    rows={buildCurrentStockRows(currentStock)}
+                    filename="estoque-atual"
+                    sheetName="Estoque Atual"
+                  />
                 </CardHeader>
                 <CardContent>
                   {currentStock.products.length === 0 ? (
@@ -908,12 +944,20 @@ export default function RelatoriosPage() {
 
             {activeTab === "value" && totalValue && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
-                    Valor Total do Estoque
-                  </CardTitle>
-                  <CardDescription>Valorização total do estoque atual</CardDescription>
+                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Valor Total do Estoque
+                    </CardTitle>
+                    <CardDescription>Valorização total do estoque atual</CardDescription>
+                  </div>
+                  <ExportButtons
+                    rows={buildTotalValueRows(totalValue)}
+                    filename="valor-total-estoque"
+                    sheetName="Valor Total"
+                    hideWhenEmpty={false}
+                  />
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
