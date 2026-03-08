@@ -100,11 +100,7 @@ export default function EditarProdutoPage() {
     }
   }, [productId, form])
 
-  const canEdit = product ? product.currentStock >= 1 : false
-
   const onSubmit = async (data: ProductFormValues) => {
-    if (!canEdit) return
-
     try {
       setIsSaving(true)
       setError("")
@@ -180,15 +176,6 @@ export default function EditarProdutoPage() {
           </Alert>
         )}
 
-        {!canEdit && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertDescription>
-              Para editar este produto, é necessário ter pelo menos 1 item em estoque. Use a tela de
-              Entrada de Estoque para adicionar itens ao produto.
-            </AlertDescription>
-          </Alert>
-        )}
-
         <Card>
           <CardHeader>
             <CardTitle>Informações do Produto</CardTitle>
@@ -197,23 +184,23 @@ export default function EditarProdutoPage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <fieldset disabled={!canEdit} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: Cabo Elétrico 2.5mm" {...field} />
-                      </FormControl>
-                      <FormDescription>Nome do produto</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <fieldset className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Cabo Elétrico 2.5mm" {...field} />
+                        </FormControl>
+                        <FormDescription>Nome do produto</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="code"
@@ -403,7 +390,7 @@ export default function EditarProdutoPage() {
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={isSaving || !canEdit}>
+                  <Button type="submit" disabled={isSaving}>
                     {isSaving ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
