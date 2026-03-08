@@ -245,26 +245,46 @@ export default function EditarProdutoPage() {
                   />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Categoria</FormLabel>
-                      <FormControl>
-                        <CategorySelect
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Selecione uma categoria"
-                        />
-                      </FormControl>
-                      <FormDescription>Categoria do produto. Clique em + para criar uma nova</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Categoria</FormLabel>
+                        <FormControl>
+                          <CategorySelect
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Selecione uma categoria"
+                          />
+                        </FormControl>
+                        <FormDescription>Categoria do produto. Clique em + para criar uma nova</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="active"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Produto Ativo</FormLabel>
+                        <FormControl>
+                          <ActiveToggle
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormDescription>Produtos inativos não aparecem nas listagens</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <FormField
                     control={form.control}
                     name="minStock"
@@ -324,21 +344,18 @@ export default function EditarProdutoPage() {
                         <FormControl>
                           <Input
                             type="number"
-                            step="0.01"
-                            placeholder="0.00"
+                            step="0,01"
+                            placeholder="0,00 "
                             {...field}
                             value={field.value || ""}
                           />
                         </FormControl>
-                        <FormDescription>Preço de custo unitário</FormDescription>
+                        <FormDescription>Custo unitário</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="salePrice"
@@ -348,31 +365,13 @@ export default function EditarProdutoPage() {
                         <FormControl>
                           <Input
                             type="number"
-                            step="0.01"
-                            placeholder="0.00"
+                            step="0,01"
+                            placeholder="0,00"
                             {...field}
                             value={field.value || ""}
                           />
                         </FormControl>
-                        <FormDescription>Preço de venda unitário (opcional)</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="active"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Produto Ativo</FormLabel>
-                        <FormControl>
-                          <ActiveToggle
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormDescription>Produtos inativos não aparecem nas listagens</FormDescription>
+                        <FormDescription>Venda unitário</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
