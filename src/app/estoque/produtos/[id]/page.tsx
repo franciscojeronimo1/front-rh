@@ -274,7 +274,7 @@ export default function EditarProdutoPage() {
                         <FormControl>
                           <Input type="number" placeholder="0" {...field} />
                         </FormControl>
-                        <FormDescription>Quantidade mínima em estoque</FormDescription>
+                        <FormDescription>Quantidade mínima</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -294,7 +294,7 @@ export default function EditarProdutoPage() {
                             {...field}
                             />
                         </FormControl>
-                        <FormDescription>Quantidade atual em estoque</FormDescription>
+                        <FormDescription>Quantidade atual</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -336,6 +336,9 @@ export default function EditarProdutoPage() {
                     )}
                   />
 
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="salePrice"
@@ -356,26 +359,25 @@ export default function EditarProdutoPage() {
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <FormField
-                  control={form.control}
-                  name="active"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">Produto Ativo</FormLabel>
+                  <FormField
+                    control={form.control}
+                    name="active"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Produto Ativo</FormLabel>
+                        <FormControl>
+                          <ActiveToggle
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
                         <FormDescription>Produtos inativos não aparecem nas listagens</FormDescription>
-                      </div>
-                      <FormControl>
-                        <ActiveToggle
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <div className="bg-muted p-4 rounded-lg">
                   <p className="text-sm font-medium mb-2">Informações Adicionais</p>
