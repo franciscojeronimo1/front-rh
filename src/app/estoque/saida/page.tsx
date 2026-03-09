@@ -20,6 +20,7 @@ import {
 import { ArrowLeft, Loader2, ArrowUp, AlertTriangle } from "lucide-react"
 import {
   createStockExit,
+  getProductById,
   type Product,
   type CreateStockExitRequest,
 } from "@/lib/api"
@@ -70,7 +71,6 @@ export default function RegistrarSaidaPage() {
     },
   })
 
-  const productId = form.watch("productId")
   const quantity = form.watch("quantity")
   const unitPrice = form.watch("unitPrice")
 
@@ -101,11 +101,14 @@ export default function RegistrarSaidaPage() {
       setError("")
 
       const quantityNum = parseFloat(data.quantity) || 0
-      
-      if (selectedProduct && quantityNum > selectedProduct.currentStock) {
+
+      // Buscar estoque atualizado antes de registrar (evita race condition)
+      const { product: freshProduct } = await getProductById(data.productId)
+      if (quantityNum > freshProduct.currentStock) {
         setError(
-          `Quantidade solicitada (${quantityNum}) é maior que o estoque disponível (${selectedProduct.currentStock})`
+          `Quantidade solicitada (${quantityNum}) é maior que o estoque disponível (${freshProduct.currentStock} ${freshProduct.unit}). O estoque pode ter sido alterado.`
         )
+        setSelectedProduct(freshProduct)
         setIsSubmitting(false)
         return
       }

@@ -111,10 +111,7 @@ function AdministracaoContent() {
         setError("Não foi possível iniciar o checkout. Tente novamente.")
       }
     } catch (err) {
-      if (err instanceof ApiError && err.statusCode === 401) {
-        handleUnauthorized()
-        return
-      }
+      if (err instanceof ApiError && err.statusCode === 401) return
       setError(err instanceof Error ? err.message : "Erro ao iniciar checkout")
     } finally {
       setIsCheckoutLoading(false)
@@ -132,23 +129,12 @@ function AdministracaoContent() {
         setError("Não foi possível abrir o portal. Tente novamente.")
       }
     } catch (err) {
-      if (err instanceof ApiError && err.statusCode === 401) {
-        handleUnauthorized()
-        return
-      }
+      if (err instanceof ApiError && err.statusCode === 401) return
       setError(err instanceof Error ? err.message : "Erro ao abrir portal")
     } finally {
       setIsPortalLoading(false)
     }
   }
-
-  const handleUnauthorized = useCallback(() => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token")
-      localStorage.removeItem("user")
-    }
-    router.push("/login")
-  }, [router])
 
   const loadUsers = async () => {
     try {
@@ -158,10 +144,7 @@ function AdministracaoContent() {
       const staffUsers = response.users.filter((u) => u.role === "STAFF")
       setUsers(staffUsers)
     } catch (err) {
-      if (err instanceof ApiError && err.statusCode === 401) {
-        handleUnauthorized()
-        return
-      }
+      if (err instanceof ApiError && err.statusCode === 401) return
       setError(err instanceof Error ? err.message : "Erro ao carregar colaboradores")
     } finally {
       setIsLoading(false)
@@ -214,10 +197,7 @@ function AdministracaoContent() {
       setCreateDialogOpen(false)
       await loadUsers()
     } catch (err) {
-      if (err instanceof ApiError && err.statusCode === 401) {
-        handleUnauthorized()
-        return
-      }
+      if (err instanceof ApiError && err.statusCode === 401) return
       setError(err instanceof Error ? err.message : "Erro ao criar colaborador")
     } finally {
       setIsSubmitting(false)
@@ -261,10 +241,7 @@ function AdministracaoContent() {
       setUserToEdit(null)
       await loadUsers()
     } catch (err) {
-      if (err instanceof ApiError && err.statusCode === 401) {
-        handleUnauthorized()
-        return
-      }
+      if (err instanceof ApiError && err.statusCode === 401) return
       setError(err instanceof Error ? err.message : "Erro ao atualizar colaborador")
     } finally {
       setIsSubmitting(false)
@@ -290,10 +267,7 @@ function AdministracaoContent() {
       setUserToDelete(null)
       await loadUsers()
     } catch (err) {
-      if (err instanceof ApiError && err.statusCode === 401) {
-        handleUnauthorized()
-        return
-      }
+      if (err instanceof ApiError && err.statusCode === 401) return
       setError(err instanceof Error ? err.message : "Erro ao remover colaborador")
     } finally {
       setIsSubmitting(false)

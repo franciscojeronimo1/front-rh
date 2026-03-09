@@ -1,3 +1,5 @@
+import { getAuthToken, redirectToLogin } from "@/lib/auth"
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"
 
 /** Timeout para listagem de produtos e ponto (start/stop/summary). Backend espera até 60s. */
@@ -5,11 +7,6 @@ const API_TIMEOUT_MS = 30000
 /** Espera entre tentativas de retry (cold start do banco). */
 const RETRY_DELAY_MS = 1500
 const MAX_RETRIES = 2
-
-function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null
-  return localStorage.getItem("token")
-}
 
 export class ApiError extends Error {
   constructor(
@@ -96,6 +93,10 @@ async function authenticatedFetch(
   if (timeoutId) clearTimeout(timeoutId)
 
   if (!response.ok) {
+    if (response.status === 401) {
+      redirectToLogin(true)
+      throw new ApiError("Sessão expirada. Redirecionando para login...", 401)
+    }
     const error = await response.json().catch(() => ({}))
     const code = error?.code && typeof error.code === "string" ? error.code : undefined
     const statusMessage = getMessageByStatus(response.status, code)

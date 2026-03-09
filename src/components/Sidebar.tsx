@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useSubscription } from "@/hooks/useSubscription"
+import { clearAuth } from "@/lib/auth"
 
 interface User {
   id: string
@@ -262,8 +263,7 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapsed }: Sideb
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
-      localStorage.removeItem("token")
-      localStorage.removeItem("user")
+      clearAuth()
       router.push("/login")
     }
   }

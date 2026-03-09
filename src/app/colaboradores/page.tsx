@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useRequirePremium } from "@/hooks/useRequirePremium"
@@ -68,14 +68,6 @@ export default function ColaboradoresPage() {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  const handleUnauthorized = useCallback(() => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token")
-      localStorage.removeItem("user")
-    }
-    router.push("/login")
-  }, [router])
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token")
@@ -117,10 +109,7 @@ export default function ColaboradoresPage() {
       const staffUsers = response.users.filter((user) => user.role === "STAFF")
       setUsers(staffUsers)
     } catch (err) {
-      if (err instanceof ApiError && err.statusCode === 401) {
-        handleUnauthorized()
-        return
-      }
+      if (err instanceof ApiError && err.statusCode === 401) return
       setError(err instanceof Error ? err.message : "Erro ao carregar colaboradores")
     } finally {
       setIsLoading(false)
@@ -155,10 +144,7 @@ export default function ColaboradoresPage() {
       }
     } catch (err) {
       console.error("Erro ao carregar detalhes:", err)
-      if (err instanceof ApiError && err.statusCode === 401) {
-        handleUnauthorized()
-        return
-      }
+      if (err instanceof ApiError && err.statusCode === 401) return
       setError(err instanceof Error ? err.message : "Erro ao carregar detalhes")
     } finally {
       setIsLoadingDetails(false)
@@ -313,7 +299,6 @@ export default function ColaboradoresPage() {
                 selectedDate={selectedDate}
                 selectedMonth={selectedMonth}
                 onViewDetails={() => loadUserDetails(user)}
-                onUnauthorized={handleUnauthorized}
               />
             ))}
           </div>
@@ -468,14 +453,12 @@ function ColaboradorCard({
   selectedDate,
   selectedMonth,
   onViewDetails,
-  onUnauthorized,
 }: {
   user: User
   filterMode: FilterMode
   selectedDate: string
   selectedMonth: string
   onViewDetails: () => void
-  onUnauthorized: () => void
 }) {
   const [summary, setSummary] = useState<TimeSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -496,10 +479,7 @@ function ColaboradorCard({
         const response = await getTimeSummary(params)
         setSummary(response.summary)
       } catch (err) {
-        if (err instanceof ApiError && err.statusCode === 401) {
-          onUnauthorized()
-          return
-        }
+        if (err instanceof ApiError && err.statusCode === 401) return
         console.error(`Erro ao carregar resumo para usuário ${user.id}:`, err)
         setSummary(null)
       } finally {
@@ -508,7 +488,7 @@ function ColaboradorCard({
     }
 
     loadSummary()
-  }, [filterMode, selectedDate, selectedMonth, user.id, onUnauthorized])
+  }, [filterMode, selectedDate, selectedMonth, user.id])
 
   const isWorking = summary?.status === "started"
 
