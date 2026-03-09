@@ -7,7 +7,7 @@ import { checkHealth } from "@/lib/api"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Building2, Users, Clock, Package, ArrowRight, LogOut, Crown, AlertCircle } from "lucide-react"
+import { Building2, Users, Clock, Package, ArrowRight, Crown, AlertCircle } from "lucide-react"
 import { useSubscription } from "@/hooks/useSubscription"
 
 interface User {
@@ -42,14 +42,6 @@ export default function Dashboard() {
     }
   }, [router])
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token")
-      localStorage.removeItem("user")
-      router.push("/login")
-    }
-  }
-
   // Mostrar loading ou nada enquanto carrega
   if (isLoading) {
     return (
@@ -79,28 +71,18 @@ export default function Dashboard() {
           </Alert>
         )}
 
-        <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Bem-vindo, {user?.name || "Usuário"}!
-            </h1>
-            <p className="text-muted-foreground">
-              Sistema de gestão empresarial
-              {!isLoadingSubscription && !isPremium && (
-                <span className="ml-2 text-amber-600 dark:text-amber-400">
-                  • Plano gratuito
-                </span>
-              )}
-            </p>
-          </div>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Sair
-          </Button>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Bem-vindo, {user?.name || "Usuário"}!
+          </h1>
+          <p className="text-muted-foreground">
+            Sistema de gestão empresarial
+            {!isLoadingSubscription && !isPremium && (
+              <span className="ml-2 text-amber-600 dark:text-amber-400">
+                • Plano gratuito
+              </span>
+            )}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
