@@ -24,13 +24,14 @@ import {
 } from "@/lib/api"
 import { ProductCombobox } from "@/components/product-combobox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const entrySchema = z.object({
   productId: z.string().min(1, "Produto é obrigatório"),
   quantity: z.string().refine((val) => {
     const num = parseFloat(val)
     return !isNaN(num) && num > 0
-  }, "Quantidade deve ser maior que 0"),
+  }, "deve ser maior que 0"),
   unitPrice: z.string().refine((val) => {
     const num = parseFloat(val)
     return !isNaN(num) && num > 0
@@ -48,6 +49,7 @@ export default function RegistrarEntradaPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [totalPrice, setTotalPrice] = useState(0)
+  const [showSupplierFields, setShowSupplierFields] = useState(false)
 
   const form = useForm<EntryFormValues>({
     resolver: zodResolver(entrySchema),
@@ -135,26 +137,26 @@ export default function RegistrarEntradaPage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="productId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Produto *</FormLabel>
-                      <FormControl>
-                        <ProductCombobox
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Digite para buscar produto..."
-                        />
-                      </FormControl>
-                      <FormDescription>Digite o nome ou código do produto que está entrando</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="productId"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Produto *</FormLabel>
+                        <FormControl>
+                          <ProductCombobox
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Digite para buscar produto..."
+                          />
+                        </FormControl>
+                        <FormDescription>Digite o nome ou código do produto que está entrando</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="quantity"
@@ -228,52 +230,73 @@ export default function RegistrarEntradaPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="supplierName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome do Fornecedor</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ex: Casa Elétrica Silva" {...field} />
-                        </FormControl>
-                        <FormDescription>Nome do fornecedor</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <Checkbox
+                  id="show-supplier-fields"
+                  checked={showSupplierFields}
+                  onCheckedChange={(checked) => {
+                    setShowSupplierFields(!!checked)
+                    if (!checked) {
+                      form.setValue("supplierName", "")
+                      form.setValue("supplierDoc", "")
+                      form.setValue("invoiceNumber", "")
+                    }
+                  }}
+                >
+                  <span className="text-sm font-medium leading-none">
+                    Informar fornecedor/CNPJ ou Nota fiscal
+                  </span>
+                </Checkbox>
 
-                  <FormField
-                    control={form.control}
-                    name="supplierDoc"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>CNPJ/CPF do Fornecedor</FormLabel>
-                        <FormControl>
-                          <Input placeholder="12.345.678/0001-90" {...field} />
-                        </FormControl>
-                        <FormDescription>Documento do fornecedor</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                {showSupplierFields && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="supplierName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nome do Fornecedor</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: Casa Elétrica Silva" {...field} />
+                            </FormControl>
+                            <FormDescription>Nome do fornecedor</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                <FormField
-                  control={form.control}
-                  name="invoiceNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número da Nota Fiscal</FormLabel>
-                      <FormControl>
-                        <Input placeholder="NF-001234" {...field} />
-                      </FormControl>
-                      <FormDescription>Número da nota fiscal (se houver)</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      <FormField
+                        control={form.control}
+                        name="supplierDoc"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>CNPJ/CPF do Fornecedor</FormLabel>
+                            <FormControl>
+                              <Input placeholder="12.345.678/0001-90" {...field} />
+                            </FormControl>
+                            <FormDescription>Documento do fornecedor</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="invoiceNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Número da Nota Fiscal</FormLabel>
+                          <FormControl>
+                            <Input placeholder="NF-001234" {...field} />
+                          </FormControl>
+                          <FormDescription>Número da nota fiscal (se houver)</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
 
                 <FormField
                   control={form.control}

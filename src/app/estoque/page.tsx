@@ -203,7 +203,7 @@ export default function EstoquePage() {
                   <ArrowDown className="w-5 h-5 text-success" />
                   Registrar Entrada
                 </CardTitle>
-                <CardDescription>Registrar compra/recebimento</CardDescription>
+                <CardDescription>Compra/recebimento</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button variant="outline" className="w-full">

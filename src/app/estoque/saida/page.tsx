@@ -25,13 +25,14 @@ import {
 } from "@/lib/api"
 import { ProductCombobox } from "@/components/product-combobox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const exitSchema = z.object({
   productId: z.string().min(1, "Produto é obrigatório"),
   quantity: z.string().refine((val) => {
     const num = parseFloat(val)
     return !isNaN(num) && num > 0
-  }, "Quantidade deve ser maior que 0"),
+  }, "deve ser maior que 0"),
   unitPrice: z
     .string()
     .optional()
@@ -54,6 +55,7 @@ export default function RegistrarSaidaPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [totalPricePreview, setTotalPricePreview] = useState(0)
+  const [showProjectFields, setShowProjectFields] = useState(false)
 
   const form = useForm<ExitFormValues>({
     resolver: zodResolver(exitSchema),
@@ -77,8 +79,10 @@ export default function RegistrarSaidaPage() {
       const salePriceNum = parseFloat(selectedProduct.salePrice)
       if (!isNaN(salePriceNum) && salePriceNum > 0) {
         form.setValue("unitPrice", salePriceNum.toFixed(2))
+        return
       }
     }
+    form.setValue("unitPrice", "")
   }, [selectedProduct?.id, selectedProduct?.salePrice, form])
 
   useEffect(() => {
@@ -167,27 +171,75 @@ export default function RegistrarSaidaPage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="productId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Produto *</FormLabel>
-                      <FormControl>
-                        <ProductCombobox
-                          value={field.value}
-                          onChange={field.onChange}
-                          onProductSelect={setSelectedProduct}
-                          placeholder="Digite para buscar produto..."
-                          showStock
-                          onlyWithStock
-                        />
-                      </FormControl>
-                      <FormDescription>Digite o nome ou código do produto que está saindo</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="productId"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Produto *</FormLabel>
+                        <FormControl>
+                          <ProductCombobox
+                            value={field.value}
+                            onChange={field.onChange}
+                            onProductSelect={setSelectedProduct}
+                            placeholder="Digite para buscar produto..."
+                            showStock
+                            onlyWithStock
+                          />
+                        </FormControl>
+                        <FormDescription>Digite o nome ou código do produto que está saindo</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="quantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Quantidade *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0"
+                            {...field}
+                            max={selectedProduct?.currentStock}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                        (máximo: {selectedProduct?.currentStock || 0}{" "}
+                          {selectedProduct?.unit || ""})
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="unitPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preço unitário de venda</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0,00"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>Venda ao cliente.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 {selectedProduct && (
                   <div className="bg-muted p-4 rounded-lg">
@@ -208,54 +260,6 @@ export default function RegistrarSaidaPage() {
                   </div>
                 )}
 
-                <FormField
-                  control={form.control}
-                  name="quantity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Quantidade *</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0"
-                          {...field}
-                          max={selectedProduct?.currentStock}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Quantidade utilizada (máximo: {selectedProduct?.currentStock || 0}{" "}
-                        {selectedProduct?.unit || ""})
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="unitPrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preço unitário de venda (opcional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="Ex: 25.50 (deixe vazio para saída sem venda)"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Informe quando for venda ao cliente. Saídas internas/perdas podem ficar sem
-                        preço.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 {totalPricePreview > 0 && (
                   <div className="bg-muted p-4 rounded-lg">
                     <div className="flex justify-between items-center">
@@ -270,52 +274,71 @@ export default function RegistrarSaidaPage() {
                   </div>
                 )}
 
-                <FormField
-                  control={form.control}
-                  name="projectName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome do Projeto</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: Instalação Residencial" {...field} />
-                      </FormControl>
-                      <FormDescription>Nome do projeto ou serviço</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <Checkbox
+                  id="show-project-fields"
+                  checked={showProjectFields}
+                  onCheckedChange={(checked) => {
+                    setShowProjectFields(!!checked)
+                    if (!checked) {
+                      form.setValue("projectName", "")
+                      form.setValue("clientName", "")
+                      form.setValue("serviceType", "")
+                    }
+                  }}
+                >
+                  <span className="text-sm font-medium leading-none">
+                    Deseja informar projeto, cliente ou tipo de serviço?
+                  </span>
+                </Checkbox>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="clientName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome do Cliente</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ex: João Silva" {...field} />
-                        </FormControl>
-                        <FormDescription>Nome do cliente</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {showProjectFields && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="projectName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome do Projeto</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Instalação Residencial" {...field} />
+                          </FormControl>
+                          <FormDescription>Nome do projeto ou serviço</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="serviceType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tipo de Serviço</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ex: Instalação Elétrica" {...field} />
-                        </FormControl>
-                        <FormDescription>Tipo de serviço realizado</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="clientName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome do Cliente</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: João Silva" {...field} />
+                          </FormControl>
+                          <FormDescription>Nome do cliente</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="serviceType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo de Serviço</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Instalação Elétrica" {...field} />
+                          </FormControl>
+                          <FormDescription>Tipo de serviço realizado</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
 
                 <FormField
                   control={form.control}
