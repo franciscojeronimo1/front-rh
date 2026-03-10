@@ -67,6 +67,17 @@ export default function RegistrarEntradaPage() {
   const quantity = form.watch("quantity")
   const unitPrice = form.watch("unitPrice")
 
+  const handleProductSelect = (product: { averageCost?: string | null; costPrice?: string | null } | null) => {
+    if (!product) {
+      form.setValue("unitPrice", "")
+      return
+    }
+    const avgCost = product.averageCost ? parseFloat(product.averageCost) : NaN
+    const cost = product.costPrice ? parseFloat(product.costPrice) : NaN
+    const price = !isNaN(avgCost) && avgCost > 0 ? avgCost : !isNaN(cost) && cost > 0 ? cost : 0
+    form.setValue("unitPrice", price > 0 ? price.toFixed(2) : "")
+  }
+
   useEffect(() => {
     const qty = parseFloat(quantity) || 0
     const price = parseFloat(unitPrice) || 0
@@ -148,6 +159,7 @@ export default function RegistrarEntradaPage() {
                           <ProductCombobox
                             value={field.value}
                             onChange={field.onChange}
+                            onProductSelect={handleProductSelect}
                             placeholder="Digite para buscar produto..."
                           />
                         </FormControl>
