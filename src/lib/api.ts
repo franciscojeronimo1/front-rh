@@ -667,6 +667,32 @@ export async function getStockEntries(
   return response.json()
 }
 
+export interface UpdateStockEntryRequest {
+  productId?: string
+  quantity?: number
+  unitPrice?: number
+  supplierName?: string
+  supplierDoc?: string
+  invoiceNumber?: string
+  notes?: string
+}
+
+export async function getStockEntryById(id: string): Promise<{ entry: StockEntry }> {
+  const response = await authenticatedFetch(`/stock/entries/${id}`)
+  return response.json()
+}
+
+export async function updateStockEntry(
+  id: string,
+  data: UpdateStockEntryRequest
+): Promise<CreateStockEntryResponse> {
+  const response = await authenticatedFetch(`/stock/entries/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  })
+  return response.json()
+}
+
 export interface StockExit {
   id: string
   productId: string
@@ -729,6 +755,32 @@ export async function getStockExits(
   if (endDate) params.append("endDate", endDate)
   const queryString = params.toString() ? `?${params.toString()}` : ""
   const response = await authenticatedFetch(`/stock/exits${queryString}`)
+  return response.json()
+}
+
+export interface UpdateStockExitRequest {
+  productId?: string
+  quantity?: number
+  unitPrice?: number
+  projectName?: string
+  clientName?: string
+  serviceType?: string
+  notes?: string
+}
+
+export async function getStockExitById(id: string): Promise<{ exit: StockExit }> {
+  const response = await authenticatedFetch(`/stock/exits/${id}`)
+  return response.json()
+}
+
+export async function updateStockExit(
+  id: string,
+  data: UpdateStockExitRequest
+): Promise<CreateStockExitResponse> {
+  const response = await authenticatedFetch(`/stock/exits/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  })
   return response.json()
 }
 

@@ -29,6 +29,7 @@ import {
   ChevronRight,
   Search,
   History,
+  Pencil,
 } from "lucide-react"
 import {
   getStockMovements,
@@ -36,6 +37,7 @@ import {
   type StockMovement,
 } from "@/lib/api"
 import { ProductCombobox } from "@/components/product-combobox"
+import Link from "next/link"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -349,6 +351,7 @@ export default function MovimentacoesPage() {
                         <TableHead>Registrado por</TableHead>
                         <TableHead>Fornecedor / Cliente</TableHead>
                         <TableHead>Observações</TableHead>
+                        <TableHead className="w-[80px]">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -356,7 +359,7 @@ export default function MovimentacoesPage() {
                         <TableRow key={mov.id}>
                           <TableCell>{formatType(mov)}</TableCell>
                           <TableCell>
-                            {format(new Date(mov.createdAt), "dd/MM/yyyy HH:mm", {
+                            {format(new Date(mov.createdAt), "dd/MM/yyyy", {
                               locale: ptBR,
                             })}
                           </TableCell>
@@ -395,6 +398,25 @@ export default function MovimentacoesPage() {
                             <span className="block truncate max-w-[200px]" title={mov.notes || ""}>
                               {mov.notes || "-"}
                             </span>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              asChild
+                            >
+                              <Link
+                                href={
+                                  mov.type === "entry"
+                                    ? `/estoque/entrada/${mov.id}/edit`
+                                    : `/estoque/saida/${mov.id}/edit`
+                                }
+                                title="Editar"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Link>
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
