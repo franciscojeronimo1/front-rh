@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -28,7 +28,7 @@ import { ProductCombobox } from "@/components/product-combobox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 
-const exitSchema = z.object({
+const baseExitSchema = z.object({
   productId: z.string().min(1, "Produto é obrigatório"),
   quantity: z.string().refine((val) => {
     const num = parseFloat(val)
@@ -48,7 +48,9 @@ const exitSchema = z.object({
   notes: z.string().optional(),
 })
 
-type ExitFormValues = z.infer<typeof exitSchema>
+const exitSchema = baseExitSchema
+
+type ExitFormValues = z.infer<typeof baseExitSchema>
 
 export default function RegistrarSaidaPage() {
   const router = useRouter()
@@ -57,9 +59,31 @@ export default function RegistrarSaidaPage() {
   const [error, setError] = useState("")
   const [totalPricePreview, setTotalPricePreview] = useState(0)
   const [showProjectFields, setShowProjectFields] = useState(false)
+  const productRef = useRef<Product | null>(null)
+  productRef.current = selectedProduct
+
+  const schemaWithStock = useMemo(
+    () =>
+      exitSchema.superRefine((data, ctx) => {
+        const product = productRef.current
+        if (!product) return
+        const qty = parseFloat(data.quantity) || 0
+        const stock = product.currentStock ?? 0
+        if (qty > stock) {
+          const unit = (product.unit ?? "").trim()
+          const suffix = unit ? ` (${stock} ${unit})` : ` (${stock})`
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Quantidade não pode exceder o estoque disponível${suffix}`,
+            path: ["quantity"],
+          })
+        }
+      }),
+    []
+  )
 
   const form = useForm<ExitFormValues>({
-    resolver: zodResolver(exitSchema),
+    resolver: zodResolver(schemaWithStock),
     defaultValues: {
       productId: "",
       quantity: "",
@@ -246,12 +270,24 @@ export default function RegistrarSaidaPage() {
 
                 {selectedProduct && (
                   <div className="bg-muted p-4 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">Estoque Disponível</p>
-                        <p className="text-2xl font-bold">
-                          {selectedProduct.currentStock} {selectedProduct.unit}
-                        </p>
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <p className="text-sm font-medium">Estoque Disponível</p>
+                          <p className="text-2xl font-bold">
+                            {selectedProduct.currentStock} {selectedProduct.unit}
+                          </p>
+                        </div>
+                        <div className="h-8 w-px bg-border hidden sm:block" />
+                        <div>
+                          <p className="text-sm font-medium">Total da venda</p>
+                          <p className="text-2xl font-bold">
+                            {new Intl.NumberFormat("pt-BR", {
+                              style: "currency",
+                              currency: "BRL",
+                            }).format(totalPricePreview)}
+                          </p>
+                        </div>
                       </div>
                       {selectedProduct.currentStock < selectedProduct.minStock && (
                         <div className="flex items-center gap-2 text-destructive">
@@ -259,20 +295,6 @@ export default function RegistrarSaidaPage() {
                           <span className="text-sm font-medium">Estoque Baixo</span>
                         </div>
                       )}
-                    </div>
-                  </div>
-                )}
-
-                {totalPricePreview > 0 && (
-                  <div className="bg-muted p-4 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Total da venda:</span>
-                      <span className="text-2xl font-bold">
-                        {new Intl.NumberFormat("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        }).format(totalPricePreview)}
-                      </span>
                     </div>
                   </div>
                 )}
