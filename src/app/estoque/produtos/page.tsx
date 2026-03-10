@@ -356,6 +356,7 @@ export default function ProdutosPage() {
                       <TableHead>Mínimo</TableHead>
                       <TableHead>Unidade</TableHead>
                       <TableHead>Preço Custo</TableHead>
+                      <TableHead>Preço Médio</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -390,6 +391,14 @@ export default function ProdutosPage() {
                                 style: "currency",
                                 currency: "BRL",
                               }).format(parseFloat(product.costPrice))
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {product.averageCost
+                            ? new Intl.NumberFormat("pt-BR", {
+                                style: "currency",
+                                currency: "BRL",
+                              }).format(parseFloat(product.averageCost))
                             : "-"}
                         </TableCell>
                         <TableCell>
