@@ -38,6 +38,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  FileUp,
 } from "lucide-react"
 import {
   getProducts,
@@ -234,10 +235,19 @@ export default function ProdutosPage() {
               <p className="text-muted-foreground">Gerencie seus produtos e estoque</p>
             </div>
           </div>
-          <Button onClick={() => router.push("/estoque/produtos/novo")}>
-            <PackagePlus className="h-4 w-4 mr-2" />
-            Novo Produto
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/estoque/produtos/importar")}
+            >
+              <FileUp className="h-4 w-4 mr-2" />
+              Importar
+            </Button>
+            <Button onClick={() => router.push("/estoque/produtos/novo")}>
+              <PackagePlus className="h-4 w-4 mr-2" />
+              Novo Produto
+            </Button>
+          </div>
         </div>
 
         {/* Alertas */}

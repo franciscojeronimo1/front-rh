@@ -59,8 +59,9 @@ async function authenticatedFetch(
 ): Promise<Response> {
   const token = getAuthToken()
   const url = `${API_BASE_URL}${endpoint}`
+  const isFormData = options.body instanceof FormData
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(token && { Authorization: `Bearer ${token}` }),
     ...options.headers,
   }
@@ -555,6 +556,57 @@ export async function updateProduct(id: string, data: UpdateProductRequest): Pro
 export async function deleteProduct(id: string): Promise<DeleteProductResponse> {
   const response = await authenticatedFetch(`/products/${id}`, {
     method: "DELETE",
+  })
+  return response.json()
+}
+
+// ========== IMPORTAÇÃO DE PRODUTOS ==========
+
+export interface ProductImportMapping {
+  name: string
+  quantity: string
+  unitPrice: string
+  code?: string
+  category?: string
+  sku?: string
+  minStock?: string
+  unit?: string
+  costPrice?: string
+  salePrice?: string
+  supplierName?: string
+  supplierDoc?: string
+  invoiceNumber?: string
+  notes?: string
+}
+
+export interface ProductImportSuccessItem {
+  line: number
+  productId: string
+  name: string
+  quantity: number
+}
+
+export interface ProductImportErrorItem {
+  line: number
+  field?: string
+  message: string
+}
+
+export interface ProductImportResponse {
+  message: string
+  summary: { total: number; success: number; errors: number }
+  success: ProductImportSuccessItem[]
+  errors: ProductImportErrorItem[]
+}
+
+/** Importa produtos + estoque a partir de arquivo CSV ou Excel (base64) */
+export async function importProducts(
+  fileBase64: string,
+  mapping: ProductImportMapping
+): Promise<ProductImportResponse> {
+  const response = await authenticatedFetch("/products/import", {
+    method: "POST",
+    body: JSON.stringify({ file: fileBase64, mapping }),
   })
   return response.json()
 }
