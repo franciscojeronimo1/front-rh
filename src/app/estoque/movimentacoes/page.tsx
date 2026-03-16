@@ -31,6 +31,7 @@ import {
   History,
   Pencil,
 } from "lucide-react"
+import { TableSkeleton } from "@/components/ui/table-skeleton"
 import {
   getStockMovements,
   type StockMovementsResponse,
@@ -304,9 +305,7 @@ export default function MovimentacoesPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
+              <TableSkeleton rows={8} columns={10} />
             ) : !data?.movements.length ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">

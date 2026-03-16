@@ -40,6 +40,7 @@ import {
   ChevronRight,
   FileUp,
 } from "lucide-react"
+import { TableSkeleton } from "@/components/ui/table-skeleton"
 import {
   getProducts,
   getCategories,
@@ -340,9 +341,7 @@ export default function ProdutosPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
+              <TableSkeleton rows={8} columns={10} />
             ) : filteredProducts.length === 0 ? (
               <div className="text-center py-12">
                 <PackagePlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

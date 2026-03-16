@@ -37,6 +37,7 @@ import {
   Sparkles,
   Settings,
 } from "lucide-react"
+import { TableSkeleton } from "@/components/ui/table-skeleton"
 import {
   getUsers,
   createStaff,
@@ -274,17 +275,6 @@ function AdministracaoContent() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -429,7 +419,7 @@ function AdministracaoContent() {
                 Colaboradores
               </CardTitle>
               <CardDescription>
-                {staffCount} de {MAX_STAFF} colaboradores cadastrados
+                {isLoading ? "Carregando..." : `${staffCount} de ${MAX_STAFF} colaboradores cadastrados`}
               </CardDescription>
             </div>
             <Button
@@ -438,7 +428,7 @@ function AdministracaoContent() {
                 setError("")
                 setCreateDialogOpen(true)
               }}
-              disabled={!canCreateMore}
+              disabled={!canCreateMore || isLoading}
               className="gap-2"
             >
               <UserPlus className="h-4 w-4" />
@@ -446,7 +436,7 @@ function AdministracaoContent() {
             </Button>
           </CardHeader>
           <CardContent>
-            {!canCreateMore && (
+            {!canCreateMore && !isLoading && (
               <Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
@@ -455,7 +445,9 @@ function AdministracaoContent() {
               </Alert>
             )}
 
-            {users.length === 0 ? (
+            {isLoading ? (
+              <TableSkeleton rows={5} columns={3} />
+            ) : users.length === 0 ? (
               <div className="py-12 text-center">
                 <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                 <p className="text-muted-foreground text-lg mb-2">Nenhum colaborador cadastrado</p>

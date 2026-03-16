@@ -37,6 +37,8 @@ import {
   Timer,
   Square,
 } from "lucide-react"
+import { CardSkeleton } from "@/components/ui/card-skeleton"
+import { Skeleton } from "@/components/ui/skeleton"
 import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import {
@@ -189,17 +191,6 @@ export default function ColaboradoresPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Carregando colaboradores...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -277,7 +268,13 @@ export default function ColaboradoresPage() {
           </Alert>
         )}
 
-        {users.length === 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <CardSkeleton key={i} />
+            ))}
+          </div>
+        ) : users.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
@@ -316,8 +313,24 @@ export default function ColaboradoresPage() {
             </DialogHeader>
 
             {isLoadingDetails ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-4 w-64 mt-2" />
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-center py-4">
+                      <Skeleton className="h-10 w-24 mx-auto mb-2" />
+                      <Skeleton className="h-4 w-20 mx-auto" />
+                    </div>
+                    <div className="space-y-2">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <Skeleton key={i} className="h-12 w-full" />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             ) : (
               <div className="space-y-6">
@@ -513,8 +526,12 @@ function ColaboradorCard({
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <div className="space-y-4">
+            <div className="text-center py-2">
+              <Skeleton className="h-9 w-20 mx-auto mb-2" />
+              <Skeleton className="h-4 w-16 mx-auto" />
+            </div>
+            <Skeleton className="h-10 w-full" />
           </div>
         ) : (
           <>

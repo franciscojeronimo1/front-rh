@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/select"
 import {
   ArrowLeft,
-  Loader2,
   TrendingUp,
   AlertTriangle,
   DollarSign,
@@ -30,6 +29,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
+import { TableSkeleton } from "@/components/ui/table-skeleton"
 import {
   getLowStock,
   getDailyUsage,
@@ -318,8 +318,8 @@ export default function RelatoriosPage() {
         {/* Content */}
         {isLoading ? (
           <Card>
-            <CardContent className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <CardContent className="pt-6">
+              <TableSkeleton rows={8} columns={6} />
             </CardContent>
           </Card>
         ) : (
