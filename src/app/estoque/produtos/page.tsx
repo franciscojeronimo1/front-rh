@@ -84,7 +84,7 @@ export default function ProdutosPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [pageInputValue, setPageInputValue] = useState("")
+  const [pageInputValue, setPageInputValue] = useState(page.toString())
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
 
   const updateListUrl = useCallback(
@@ -149,15 +149,15 @@ export default function ProdutosPage() {
     }
   }, [isLoading, products.length, pagination, updateListUrl])
 
+
   useEffect(() => {
-    if (pagination) {
-      setPageInputValue(pagination.page.toString())
-    }
-  }, [pagination?.page])
+    setPageInputValue(page.toString())
+  }, [page])
 
   useEffect(() => {
     const t = setTimeout(() => {
       if (searchTerm !== searchFromUrl) {
+        setPageInputValue("1")
         updateListUrl({ q: searchTerm, page: 1 })
       }
     }, SEARCH_DEBOUNCE_MS)
@@ -166,14 +166,17 @@ export default function ProdutosPage() {
 
   const handleLimitChange = (value: string) => {
     const n = Number(value)
+    setPageInputValue("1")
     updateListUrl({ limit: n, page: 1 })
   }
 
   const handleCategoryChange = (value: string) => {
+    setPageInputValue("1")
     updateListUrl({ category: value, page: 1 })
   }
 
   const handleActiveChange = (value: string) => {
+    setPageInputValue("1")
     updateListUrl({ active: value, page: 1 })
   }
 

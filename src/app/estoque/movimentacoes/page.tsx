@@ -108,13 +108,12 @@ export default function MovimentacoesPage() {
   }, [page, limit,])
 
   useEffect(() => {
-    if (data?.pagination) {
-      setPageInputValue(data.pagination.page.toString())
-    }
-  }, [data?.pagination?.page])
+    setPageInputValue(page.toString())
+  }, [page])
 
   const handleFilter = () => {
     setPage(1)
+    setPageInputValue("1")
     loadMovements({ page: 1 })
   }
 
@@ -126,6 +125,7 @@ export default function MovimentacoesPage() {
     setClient("")
     setType("all")
     setPage(1)
+    setPageInputValue("1")
     loadMovements({
       page: 1,
       dateFrom: "",
