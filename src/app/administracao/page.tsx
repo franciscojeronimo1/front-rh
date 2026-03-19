@@ -309,11 +309,6 @@ function AdministracaoContent() {
         {(success || showSuccessMessage) && (
           <Alert className="border-success bg-success/10 text-success">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {showSuccessMessage
-                ? "Pagamento realizado com sucesso! Seu plano Premium está ativo."
-                : success}
-            </AlertDescription>
           </Alert>
         )}
 
