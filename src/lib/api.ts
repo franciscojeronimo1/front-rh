@@ -521,6 +521,7 @@ export interface GetProductsParams {
   includeInactive?: boolean
   /** Busca por nome, código ou SKU (case insensitive) */
   search?: string
+  supplier?: string
   page?: number
   limit?: number
 }
@@ -530,6 +531,7 @@ export async function getProducts(params?: GetProductsParams): Promise<ProductsR
   if (params?.category) searchParams.append("category", params.category)
   if (params?.includeInactive === true) searchParams.append("includeInactive", "true")
   if (params?.search) searchParams.append("search", params.search)
+  if (params?.supplier?.trim()) searchParams.append("supplier", params.supplier.trim())
   if (params?.page !== undefined) searchParams.append("page", params.page.toString())
   if (params?.limit !== undefined) searchParams.append("limit", params.limit.toString())
   const queryString = searchParams.toString() ? `?${searchParams.toString()}` : ""

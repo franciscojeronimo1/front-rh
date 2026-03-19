@@ -53,12 +53,20 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 const LIMIT_OPTIONS = [10, 20, 30] as const
 const SEARCH_DEBOUNCE_MS = 400
 
-function buildListQuery(params: { page?: number; limit?: number; category?: string; active?: string; q?: string }) {
+function buildListQuery(params: {
+  page?: number
+  limit?: number
+  category?: string
+  active?: string
+  supplier?: string
+  q?: string
+}) {
   const sp = new URLSearchParams()
   if (params.page != null && params.page > 1) sp.set("page", String(params.page))
   if (params.limit != null && params.limit !== 10) sp.set("limit", String(params.limit))
   if (params.category && params.category !== "all") sp.set("category", params.category)
   if (params.active && params.active !== "all") sp.set("active", params.active)
+  if (params.supplier?.trim()) sp.set("supplier", params.supplier.trim())
   if (params.q?.trim()) sp.set("q", params.q.trim())
   const qs = sp.toString()
   return qs ? `?${qs}` : ""
@@ -73,12 +81,14 @@ export default function ProdutosPage() {
   const limit = Math.min(100, parseInt(searchParams.get("limit") ?? "10", 10) || 10)
   const categoryFilter = searchParams.get("category") ?? "all"
   const activeFilter = searchParams.get("active") ?? "all"
+  const supplierFilter = searchParams.get("supplier") ?? ""
   const searchFromUrl = searchParams.get("q") ?? ""
 
   const [products, setProducts] = useState<Product[]>([])
   const [pagination, setPagination] = useState<PaginationInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState(searchFromUrl)
+  const [supplierTerm, setSupplierTerm] = useState(supplierFilter)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -88,22 +98,34 @@ export default function ProdutosPage() {
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
 
   const updateListUrl = useCallback(
-    (updates: { page?: number; limit?: number; category?: string; active?: string; q?: string }) => {
+    (updates: {
+      page?: number
+      limit?: number
+      category?: string
+      active?: string
+      supplier?: string
+      q?: string
+    }) => {
       const next = buildListQuery({
         page: updates.page ?? page,
         limit: updates.limit ?? limit,
         category: updates.category ?? categoryFilter,
         active: updates.active ?? activeFilter,
+        supplier: updates.supplier !== undefined ? updates.supplier : supplierFilter,
         q: updates.q !== undefined ? updates.q : searchFromUrl,
       })
       router.replace(pathname + next, { scroll: false })
     },
-    [pathname, router, page, limit, categoryFilter, activeFilter, searchFromUrl]
+    [pathname, router, page, limit, categoryFilter, activeFilter, supplierFilter, searchFromUrl]
   )
 
   useEffect(() => {
     setSearchTerm((prev) => (prev !== searchFromUrl ? searchFromUrl : prev))
   }, [searchFromUrl])
+
+  useEffect(() => {
+    setSupplierTerm((prev) => (prev !== supplierFilter ? supplierFilter : prev))
+  }, [supplierFilter])
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -127,6 +149,7 @@ export default function ProdutosPage() {
         category: categoryFilter === "all" ? undefined : categoryFilter,
         includeInactive,
         search: searchFromUrl.trim() || undefined,
+        supplier: supplierFilter.trim() || undefined,
         page,
         limit,
       })
@@ -141,7 +164,7 @@ export default function ProdutosPage() {
 
   useEffect(() => {
     loadProducts()
-  }, [categoryFilter, activeFilter, searchFromUrl, page, limit])
+  }, [categoryFilter, activeFilter, supplierFilter, searchFromUrl, page, limit])
 
   useEffect(() => {
     if (!isLoading && products.length === 0 && pagination && pagination.page > 1) {
@@ -163,6 +186,16 @@ export default function ProdutosPage() {
     }, SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(t)
   }, [searchTerm, searchFromUrl, updateListUrl])
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (supplierTerm !== supplierFilter) {
+        setPageInputValue("1")
+        updateListUrl({ supplier: supplierTerm, page: 1 })
+      }
+    }, SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [supplierTerm, supplierFilter, updateListUrl])
 
   const handleLimitChange = (value: string) => {
     const n = Number(value)
@@ -222,7 +255,7 @@ export default function ProdutosPage() {
 
   return (
     <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1600px] mx-auto w-full">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
@@ -271,16 +304,25 @@ export default function ProdutosPage() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Filtros</CardTitle>
-            <CardDescription>Filtre produtos por categoria e status</CardDescription>
+            <CardDescription>Filtre produtos por busca, fornecedor, categoria e status</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por nome, código ou SKU..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Filtrar por fornecedor..."
+                  value={supplierTerm}
+                  onChange={(e) => setSupplierTerm(e.target.value)}
                   className="pl-9"
                 />
               </div>
@@ -344,7 +386,7 @@ export default function ProdutosPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <TableSkeleton rows={8} columns={10} />
+              <TableSkeleton rows={8} columns={11} />
             ) : filteredProducts.length === 0 ? (
               <div className="text-center py-12">
                 <PackagePlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -357,29 +399,33 @@ export default function ProdutosPage() {
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto rounded-lg border">
+                <Table className="min-w-[1200px]">
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Código</TableHead>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead>Estoque</TableHead>
-                      <TableHead>Mínimo</TableHead>
-                      <TableHead>Unidade</TableHead>
-                      <TableHead>Preço Custo</TableHead>
-                      <TableHead>Preço Médio</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="min-w-[180px] px-4 py-3 font-semibold">Nome</TableHead>
+                      <TableHead className="min-w-[90px] px-4 py-3">Código</TableHead>
+                      <TableHead className="min-w-[120px] px-4 py-3">Categoria</TableHead>
+                      <TableHead className="min-w-[100px] px-4 py-3">Fornecedor</TableHead>
+                      <TableHead className="min-w-[80px] px-4 py-3">Estoque</TableHead>
+                      <TableHead className="min-w-[70px] px-4 py-3">Mínimo</TableHead>
+                      <TableHead className="min-w-[70px] px-4 py-3">Unidade</TableHead>
+                      <TableHead className="min-w-[100px] px-4 py-3">Preço Custo</TableHead>
+                      <TableHead className="min-w-[100px] px-4 py-3">Preço Médio</TableHead>
+                      <TableHead className="min-w-[90px] px-4 py-3">Status</TableHead>
+                      <TableHead className="min-w-[100px] px-4 py-3 text-right font-semibold">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredProducts.map((product) => (
-                      <TableRow key={product.id}>
-                        <TableCell className="font-medium">{product.name}</TableCell>
-                        <TableCell>{product.code || "-"}</TableCell>
-                        <TableCell>{product.category || "-"}</TableCell>
-                        <TableCell>
+                      <TableRow key={product.id} className="group">
+                        <TableCell className="font-medium px-4 py-3 min-w-[180px]">{product.name}</TableCell>
+                        <TableCell className="px-4 py-3">{product.code || "-"}</TableCell>
+                        <TableCell className="px-4 py-3">{product.category || "-"}</TableCell>
+                        <TableCell className="px-4 py-3 min-w-[100px]" title={product.supplierName || undefined}>
+                          <span className="truncate block max-w-[140px]">{product.supplierName || "-"}</span>
+                        </TableCell>
+                        <TableCell className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <span
                               className={
@@ -395,9 +441,9 @@ export default function ProdutosPage() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>{product.minStock}</TableCell>
-                        <TableCell>{product.unit}</TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-3">{product.minStock}</TableCell>
+                        <TableCell className="px-4 py-3">{product.unit}</TableCell>
+                        <TableCell className="px-4 py-3">
                           {product.costPrice
                             ? new Intl.NumberFormat("pt-BR", {
                                 style: "currency",
@@ -405,7 +451,7 @@ export default function ProdutosPage() {
                               }).format(parseFloat(product.costPrice))
                             : "-"}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-3">
                           {product.averageCost
                             ? new Intl.NumberFormat("pt-BR", {
                                 style: "currency",
@@ -413,7 +459,7 @@ export default function ProdutosPage() {
                               }).format(parseFloat(product.averageCost))
                             : "-"}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-3">
                           <span
                             className={`px-2 py-1 rounded-full text-xs ${
                               product.active
@@ -424,7 +470,7 @@ export default function ProdutosPage() {
                             {product.active ? "Ativo" : "Inativo"}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right px-4 py-3">
                           <div className="flex items-center justify-end gap-2">
                             <Button
                               variant="outline"
@@ -435,6 +481,7 @@ export default function ProdutosPage() {
                                   limit,
                                   category: categoryFilter,
                                   active: activeFilter,
+                                  supplier: supplierTerm.trim() || undefined,
                                   q: searchTerm.trim() || undefined,
                                 })
                                 router.push(`/estoque/produtos/${product.id}?from=${encodeURIComponent(returnUrl)}`)
