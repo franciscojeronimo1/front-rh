@@ -4,7 +4,6 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,42 +18,20 @@ import {
 } from "@/components/ui/form"
 import { ArrowLeft, Loader2, PackagePlus } from "lucide-react"
 import { createProduct, type CreateProductRequest } from "@/lib/api"
+import { productCreateSchema, type ProductCreateFormValues } from "@/lib/schemas/product"
 import { CategorySelect } from "@/components/category-select"
 import { ActiveToggle } from "@/components/ui/active-toggle"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
-const productSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório"),
-  code: z.string().optional(),
-  sku: z.string().optional(),
-  category: z.string().optional(),
-  minStock: z.string().refine((val) => {
-    const num = parseFloat(val)
-    return !isNaN(num) && num >= 0
-  }, "Estoque mínimo deve ser >= 0"),
-  unit: z.string().min(1, "Unidade é obrigatória"),
-  costPrice: z.string().optional().refine((val) => {
-    if (!val || val === "") return true
-    const num = parseFloat(val)
-    return !isNaN(num) && num >= 0
-  }, "Preço deve ser >= 0"),
-  salePrice: z.string().optional().refine((val) => {
-    if (!val || val === "") return true
-    const num = parseFloat(val)
-    return !isNaN(num) && num > 0
-  }, "Preço de venda deve ser maior que 0 quando informado"),
-  active: z.boolean().optional(),
-})
-
-type ProductFormValues = z.infer<typeof productSchema>
+import { Checkbox } from "@/components/ui/checkbox"
 
 export default function NovoProdutoPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [showSupplierFields, setShowSupplierFields] = useState(false)
 
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema),
+  const form = useForm<ProductCreateFormValues>({
+    resolver: zodResolver(productCreateSchema),
     defaultValues: {
       name: "",
       code: "",
@@ -64,11 +41,13 @@ export default function NovoProdutoPage() {
       unit: "UN",
       costPrice: "",
       salePrice: "",
+      supplierName: "",
+      supplierDoc: "",
       active: true,
     },
   })
 
-  const onSubmit = async (data: ProductFormValues) => {
+  const onSubmit = async (data: ProductCreateFormValues) => {
     try {
       setIsLoading(true)
       setError("")
@@ -82,6 +61,8 @@ export default function NovoProdutoPage() {
         unit: data.unit,
         costPrice: data.costPrice ? parseFloat(data.costPrice) : undefined,
         salePrice: data.salePrice ? parseFloat(data.salePrice) : undefined,
+        supplierName: data.supplierName || undefined,
+        supplierDoc: data.supplierDoc || undefined,
         active: data.active ?? true,
       }
 
@@ -286,6 +267,56 @@ export default function NovoProdutoPage() {
                     )}
                   />
                 </div>
+
+                <Checkbox
+                  id="show-supplier-fields"
+                  checked={showSupplierFields}
+                  onCheckedChange={(checked) => {
+                    setShowSupplierFields(!!checked)
+                    if (!checked) {
+                      form.setValue("supplierName", "")
+                      form.setValue("supplierDoc", "")
+                    }
+                  }}
+                >
+                  <span className="text-sm font-medium leading-none">
+                    Informar fornecedor
+                  </span>
+                </Checkbox>
+
+                {showSupplierFields && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="supplierName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome do Fornecedor</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Distribuidora XYZ" {...field} />
+                          </FormControl>
+                          <FormDescription>Nome do fornecedor</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="supplierDoc"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CNPJ/CPF do Fornecedor</FormLabel>
+                          <FormControl>
+                            <Input placeholder="12.345.678/0001-90" {...field} />
+                          </FormControl>
+                          <FormDescription>Documento do fornecedor</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-4">
                   <Button

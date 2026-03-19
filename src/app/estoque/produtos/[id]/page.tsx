@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,40 +18,11 @@ import {
 } from "@/components/ui/form"
 import { ArrowLeft, Loader2, Save } from "lucide-react"
 import { getProductById, updateProduct, type Product, type UpdateProductRequest } from "@/lib/api"
+import { productUpdateSchema, type ProductUpdateFormValues } from "@/lib/schemas/product"
 import { CategorySelect } from "@/components/category-select"
 import { ActiveToggle } from "@/components/ui/active-toggle"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
-const productSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório").optional(),
-  code: z.string().optional(),
-  sku: z.string().optional(),
-  category: z.string().optional(),
-  minStock: z.string().optional().refine((val) => {
-    if (!val || val === "") return true
-    const num = parseFloat(val)
-    return !isNaN(num) && num >= 0
-  }, "Estoque mínimo deve ser >= 0"),
-  currentStock: z.string().optional().refine((val) => {
-    if (!val || val === "") return true
-    const num = parseInt(val, 10)
-    return !isNaN(num) && num >= 0
-  }, "Estoque atual deve ser um número inteiro >= 0"),
-  unit: z.string().optional(),
-  costPrice: z.string().optional().refine((val) => {
-    if (!val || val === "") return true
-    const num = parseFloat(val)
-    return !isNaN(num) && num >= 0
-  }, "Preço deve ser >= 0"),
-  salePrice: z.string().optional().refine((val) => {
-    if (!val || val === "") return true
-    const num = parseFloat(val)
-    return !isNaN(num) && num > 0
-  }, "Preço de venda deve ser maior que 0 quando informado"),
-  active: z.boolean().optional(),
-})
-
-type ProductFormValues = z.infer<typeof productSchema>
+import { Checkbox } from "@/components/ui/checkbox"
 
 export default function EditarProdutoPage() {
   const router = useRouter()
@@ -65,9 +35,10 @@ export default function EditarProdutoPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState("")
+  const [showSupplierFields, setShowSupplierFields] = useState(false)
 
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema),
+  const form = useForm<ProductUpdateFormValues>({
+    resolver: zodResolver(productUpdateSchema),
   })
 
   useEffect(() => {
@@ -86,8 +57,11 @@ export default function EditarProdutoPage() {
           unit: response.product.unit,
           costPrice: response.product.costPrice || "",
           salePrice: response.product.salePrice || "",
+          supplierName: response.product.supplierName || "",
+          supplierDoc: response.product.supplierDoc || "",
           active: response.product.active,
         })
+        setShowSupplierFields(!!(response.product.supplierName || response.product.supplierDoc))
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erro ao carregar produto")
       } finally {
@@ -100,7 +74,7 @@ export default function EditarProdutoPage() {
     }
   }, [productId, form])
 
-  const onSubmit = async (data: ProductFormValues) => {
+  const onSubmit = async (data: ProductUpdateFormValues) => {
     try {
       setIsSaving(true)
       setError("")
@@ -115,6 +89,8 @@ export default function EditarProdutoPage() {
         unit: data.unit,
         costPrice: data.costPrice ? parseFloat(data.costPrice) : undefined,
         salePrice: data.salePrice ? parseFloat(data.salePrice) : undefined,
+        supplierName: showSupplierFields ? (data.supplierName || null) : null,
+        supplierDoc: showSupplierFields ? (data.supplierDoc || null) : null,
         active: data.active,
       }
 
@@ -364,6 +340,56 @@ export default function EditarProdutoPage() {
                     )}
                   />
                 </div>
+
+                <Checkbox
+                  id="show-supplier-fields"
+                  checked={showSupplierFields}
+                  onCheckedChange={(checked) => {
+                    setShowSupplierFields(!!checked)
+                    if (!checked) {
+                      form.setValue("supplierName", "")
+                      form.setValue("supplierDoc", "")
+                    }
+                  }}
+                >
+                  <span className="text-sm font-medium leading-none">
+                    Informar fornecedor
+                  </span>
+                </Checkbox>
+
+                {showSupplierFields && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="supplierName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome do Fornecedor</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Distribuidora XYZ" {...field} />
+                          </FormControl>
+                          <FormDescription>Nome do fornecedor</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="supplierDoc"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CNPJ/CPF do Fornecedor</FormLabel>
+                          <FormControl>
+                            <Input placeholder="12.345.678/0001-90" {...field} />
+                          </FormControl>
+                          <FormDescription>Documento do fornecedor</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
 
                 <div className="bg-muted p-4 rounded-lg">
                   <p className="text-sm font-medium mb-2">Informações Adicionais</p>

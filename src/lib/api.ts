@@ -446,6 +446,8 @@ export interface Product {
   costPrice?: string | null
   salePrice?: string | null
   averageCost?: string | null
+  supplierName?: string | null
+  supplierDoc?: string | null
   active: boolean
   organizationId: string
   createdAt: string
@@ -461,6 +463,8 @@ export interface CreateProductRequest {
   unit?: string
   costPrice?: number
   salePrice?: number
+  supplierName?: string
+  supplierDoc?: string
   active?: boolean
 }
 
@@ -474,6 +478,8 @@ export interface UpdateProductRequest {
   unit?: string
   costPrice?: number
   salePrice?: number
+  supplierName?: string | null
+  supplierDoc?: string | null
   active?: boolean
 }
 
