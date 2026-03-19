@@ -306,11 +306,7 @@ function AdministracaoContent() {
           </Alert>
         )}
 
-        {(success || showSuccessMessage) && (
-          <Alert className="border-success bg-success/10 text-success">
-            <AlertCircle className="h-4 w-4" />
-          </Alert>
-        )}
+     
 
         {/* Card de Assinatura */}
         <Card className={isPremium ? "border-amber-500/50 bg-amber-500/5" : ""}>
