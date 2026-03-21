@@ -395,6 +395,8 @@ export interface Subscription {
   plan: Plan
   status: SubscriptionStatus
   isPremium: boolean
+  /** true apenas durante o trial (espelha status TRIAL). */
+  isTrialing?: boolean
   message?: string
   startedAt?: string
   expiresAt?: string

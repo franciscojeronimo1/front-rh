@@ -50,17 +50,9 @@ import {
   type CreateStaffRequest,
 } from "@/lib/api"
 import { useSubscription } from "@/hooks/useSubscription"
+import { formatSubscriptionDate, formatTrialEndsAt } from "@/lib/subscription-format"
 
 const MAX_STAFF = 5
-
-function formatSubscriptionDate(isoDate: string): string {
-  try {
-    const d = new Date(isoDate)
-    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
-  } catch {
-    return isoDate
-  }
-}
 
 function AdministracaoContent() {
   const router = useRouter()
@@ -91,7 +83,13 @@ function AdministracaoContent() {
   const [isPortalLoading, setIsPortalLoading] = useState(false)
 
   const searchParams = useSearchParams()
-  const { subscription, isPremium, isLoading: isLoadingSubscription, refetch: refetchSubscription } = useSubscription()
+  const {
+    subscription,
+    isPremium,
+    isTrialing,
+    isLoading: isLoadingSubscription,
+    refetch: refetchSubscription,
+  } = useSubscription()
 
   const showSuccessMessage = searchParams.get("success") === "1"
 
@@ -323,6 +321,8 @@ function AdministracaoContent() {
               <CardDescription>
                 {isLoadingSubscription ? (
                   "Carregando..."
+                ) : isPremium && isTrialing ? (
+                  "Teste Premium — acesso completo durante o período de avaliação"
                 ) : isPremium ? (
                   "Plano Premium ativo — acesso completo ao sistema"
                 ) : (
@@ -339,7 +339,11 @@ function AdministracaoContent() {
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {subscription?.plan === "PREMIUM" ? "Premium" : "Gratuito"}
+                  {subscription?.plan === "PREMIUM"
+                    ? isTrialing
+                      ? "Teste Premium"
+                      : "Premium"
+                    : "Gratuito"}
                 </span>
                 {!isPremium && (
                   <Button
@@ -384,13 +388,25 @@ function AdministracaoContent() {
               </div>
             )}
           </CardHeader>
-          {!isLoadingSubscription && isPremium && subscription?.expiresAt && (
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {subscription.cancelAtPeriodEnd
-                  ? `Seu Premium expira em ${formatSubscriptionDate(subscription.expiresAt)} e não será renovado.`
-                  : `Próxima renovação em ${formatSubscriptionDate(subscription.expiresAt)}.`}
-              </p>
+          {!isLoadingSubscription && isPremium && (isTrialing || subscription?.expiresAt) && (
+            <CardContent className="space-y-2">
+              {isTrialing && subscription?.trialEndsAt && (
+                <p className="text-sm text-muted-foreground">
+                  Seu Teste Premium termina em {formatTrialEndsAt(subscription.trialEndsAt)}.
+                </p>
+              )}
+              {isTrialing && !subscription?.trialEndsAt && (
+                <p className="text-sm text-muted-foreground">
+                  Seu Teste Premium está ativo.
+                </p>
+              )}
+              {!isTrialing && subscription?.expiresAt && (
+                <p className="text-sm text-muted-foreground">
+                  {subscription.cancelAtPeriodEnd
+                    ? `Seu Premium expira em ${formatSubscriptionDate(subscription.expiresAt)} e não será renovado.`
+                    : `Próxima renovação em ${formatSubscriptionDate(subscription.expiresAt)}.`}
+                </p>
+              )}
             </CardContent>
           )}
           {!isLoadingSubscription && !isPremium && (

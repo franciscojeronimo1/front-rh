@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Building2, Users, Clock, Package, ArrowRight, Crown, AlertCircle } from "lucide-react"
 import { useSubscription } from "@/hooks/useSubscription"
+import { formatTrialEndsAt } from "@/lib/subscription-format"
 
 interface User {
   id: string
@@ -21,7 +22,12 @@ export default function Dashboard() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const showUpgradeMessage = searchParams.get("upgrade") === "1"
-  const { isPremium, isLoading: isLoadingSubscription } = useSubscription()
+  const {
+    subscription,
+    isPremium,
+    isTrialing,
+    isLoading: isLoadingSubscription,
+  } = useSubscription()
 
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -82,7 +88,17 @@ export default function Dashboard() {
                 • Plano gratuito
               </span>
             )}
+            {!isLoadingSubscription && isPremium && isTrialing && (
+              <span className="ml-2 text-amber-600 dark:text-amber-400">
+                • Teste Premium
+              </span>
+            )}
           </p>
+          {!isLoadingSubscription && isPremium && isTrialing && subscription?.trialEndsAt && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Seu Teste Premium termina em {formatTrialEndsAt(subscription.trialEndsAt)}.
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
