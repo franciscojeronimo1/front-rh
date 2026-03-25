@@ -49,6 +49,7 @@ import {
   type PaginationInfo,
 } from "@/lib/api"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { cn } from "@/lib/utils"
 
 const LIMIT_OPTIONS = [10, 20, 30] as const
 const SEARCH_DEBOUNCE_MS = 400
@@ -70,6 +71,16 @@ function buildListQuery(params: {
   if (params.q?.trim()) sp.set("q", params.q.trim())
   const qs = sp.toString()
   return qs ? `?${qs}` : ""
+}
+
+type StockRowTone = "zero" | "low" | "ok"
+
+function getStockRowTone(product: Product): StockRowTone {
+  const stock = product.currentStock ?? 0
+  const min = product.minStock ?? 0
+  if (stock === 0) return "zero"
+  if (min > 0 && stock < min) return "low"
+  return "ok"
 }
 
 export default function ProdutosPage() {
@@ -417,8 +428,20 @@ export default function ProdutosPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredProducts.map((product) => (
-                      <TableRow key={product.id} className="group">
+                    {filteredProducts.map((product) => {
+                      const rowTone = getStockRowTone(product)
+                      return (
+                      <TableRow
+                        key={product.id}
+                        className={cn(
+                          "group",
+                          rowTone === "zero" &&
+                            "bg-rose-50/75 dark:bg-rose-950/25 hover:bg-rose-100/65 dark:hover:bg-rose-950/40 text-foreground/90",
+                          rowTone === "low" &&
+                            "bg-orange-50/80 dark:bg-orange-950/20 hover:bg-orange-100/60 dark:hover:bg-orange-950/35",
+                          rowTone === "ok" && "bg-background"
+                        )}
+                      >
                         <TableCell className="font-medium px-4 py-3 min-w-[180px]">{product.name}</TableCell>
                         <TableCell className="px-4 py-3">{product.code || "-"}</TableCell>
                         <TableCell className="px-4 py-3">{product.category || "-"}</TableCell>
@@ -428,16 +451,23 @@ export default function ProdutosPage() {
                         <TableCell className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <span
-                              className={
-                                isLowStock(product)
-                                  ? "text-destructive font-bold"
-                                  : "text-foreground"
-                              }
+                              className={cn(
+                                rowTone === "zero" && "text-destructive font-bold",
+                                rowTone === "low" &&
+                                  "text-orange-700 dark:text-orange-400 font-semibold",
+                                rowTone === "ok" && "text-foreground"
+                              )}
                             >
                               {product.currentStock}
                             </span>
                             {isLowStock(product) && (
-                              <AlertTriangle className="h-4 w-4 text-destructive" />
+                              <AlertTriangle
+                                className={cn(
+                                  "h-4 w-4 shrink-0",
+                                  rowTone === "zero" && "text-destructive",
+                                  rowTone === "low" && "text-orange-600 dark:text-orange-400"
+                                )}
+                              />
                             )}
                           </div>
                         </TableCell>
@@ -502,7 +532,8 @@ export default function ProdutosPage() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>
