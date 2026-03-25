@@ -755,6 +755,13 @@ export async function updateStockEntry(
   return response.json()
 }
 
+export async function deleteStockEntry(id: string): Promise<{ message: string }> {
+  const response = await authenticatedFetch(`/stock/entries/${id}`, {
+    method: "DELETE",
+  })
+  return response.json()
+}
+
 export interface StockExit {
   id: string
   productId: string
@@ -842,6 +849,13 @@ export async function updateStockExit(
   const response = await authenticatedFetch(`/stock/exits/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
+  })
+  return response.json()
+}
+
+export async function deleteStockExit(id: string): Promise<{ message: string }> {
+  const response = await authenticatedFetch(`/stock/exits/${id}`, {
+    method: "DELETE",
   })
   return response.json()
 }

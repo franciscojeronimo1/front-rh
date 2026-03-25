@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form"
 import { ArrowLeft, Loader2, ArrowUp, AlertTriangle } from "lucide-react"
 import {
+  deleteStockExit,
   getStockExitById,
   getProductById,
   updateStockExit,
@@ -28,6 +29,14 @@ import {
 import { ProductCombobox } from "@/components/product-combobox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 const baseExitSchema = z.object({
   productId: z.string().min(1, "Produto é obrigatório"),
@@ -60,6 +69,8 @@ export default function EditarSaidaPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [error, setError] = useState("")
   const [totalPricePreview, setTotalPricePreview] = useState(0)
   const [showProjectFields, setShowProjectFields] = useState(false)
@@ -182,6 +193,20 @@ export default function EditarSaidaPage() {
       setError(err instanceof Error ? err.message : "Erro ao atualizar saída")
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true)
+      setError("")
+      await deleteStockExit(id)
+      router.push("/estoque/movimentacoes")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir saída")
+      setDeleteDialogOpen(false)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -406,33 +431,71 @@ export default function EditarSaidaPage() {
                   )}
                 />
 
-                <div className="flex justify-end gap-4">
+                <div className="flex flex-col-reverse gap-4 sm:flex-row sm:justify-between sm:items-center">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push("/estoque/movimentacoes")}
-                    disabled={isSubmitting}
+                    className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    disabled={isSubmitting || isDeleting}
                   >
-                    Cancelar
+                    Excluir saída
                   </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Salvando...
-                      </>
-                    ) : (
-                      <>
-                        <ArrowUp className="h-4 w-4 mr-2" />
-                        Salvar alterações
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex justify-end gap-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => router.push("/estoque/movimentacoes")}
+                      disabled={isSubmitting || isDeleting}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting || isDeleting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowUp className="h-4 w-4 mr-2" />
+                          Salvar alterações
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </form>
             </Form>
           </CardContent>
         </Card>
+
+        <Dialog open={deleteDialogOpen} onOpenChange={(open) => !isDeleting && setDeleteDialogOpen(open)}>
+          <DialogContent showCloseButton={!isDeleting}>
+            <DialogHeader>
+              <DialogTitle>Excluir esta saída?</DialogTitle>
+              <DialogDescription>
+                O registro será removido e a quantidade voltará ao estoque atual do produto. Esta ação não
+                pode ser desfeita.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
+                Cancelar
+              </Button>
+              <Button type="button" variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  "Excluir"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

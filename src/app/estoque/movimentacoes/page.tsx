@@ -30,9 +30,12 @@ import {
   Search,
   History,
   Pencil,
+  Trash2,
 } from "lucide-react"
 import { TableSkeleton } from "@/components/ui/table-skeleton"
 import {
+  deleteStockEntry,
+  deleteStockExit,
   getStockMovements,
   type StockMovementsResponse,
   type StockMovement,
@@ -42,6 +45,14 @@ import Link from "next/link"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 export default function MovimentacoesPage() {
   const router = useRouter()
@@ -59,6 +70,13 @@ export default function MovimentacoesPage() {
   const [supplier, setSupplier] = useState("")
   const [client, setClient] = useState("")
   const [type, setType] = useState<"entry" | "exit" | "all">("all")
+
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string
+    type: "entry" | "exit"
+    productName: string
+  } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const LIMIT_OPTIONS = [10, 20, 30, 50] as const
 
@@ -148,6 +166,25 @@ export default function MovimentacoesPage() {
     }
     setPage(num)
     setPageInputValue(num.toString())
+  }
+
+  const confirmDeleteMovement = async () => {
+    if (!deleteTarget) return
+    try {
+      setIsDeleting(true)
+      setError("")
+      if (deleteTarget.type === "entry") {
+        await deleteStockEntry(deleteTarget.id)
+      } else {
+        await deleteStockExit(deleteTarget.id)
+      }
+      setDeleteTarget(null)
+      await loadMovements()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir movimentação")
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const formatType = (movement: StockMovement) => {
@@ -350,7 +387,7 @@ export default function MovimentacoesPage() {
                         <TableHead>Registrado por</TableHead>
                         <TableHead>Fornecedor / Cliente</TableHead>
                         <TableHead>Observações</TableHead>
-                        <TableHead className="w-[80px]">Ações</TableHead>
+                        <TableHead className="w-[100px]">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -399,23 +436,40 @@ export default function MovimentacoesPage() {
                             </span>
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              asChild
-                            >
-                              <Link
-                                href={
-                                  mov.type === "entry"
-                                    ? `/estoque/entrada/${mov.id}/edit`
-                                    : `/estoque/saida/${mov.id}/edit`
-                                }
-                                title="Editar"
+                            <div className="flex items-center gap-0.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                asChild
                               >
-                                <Pencil className="h-4 w-4" />
-                              </Link>
-                            </Button>
+                                <Link
+                                  href={
+                                    mov.type === "entry"
+                                      ? `/estoque/entrada/${mov.id}/edit`
+                                      : `/estoque/saida/${mov.id}/edit`
+                                  }
+                                  title="Editar"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                title="Excluir"
+                                onClick={() =>
+                                  setDeleteTarget({
+                                    id: mov.id,
+                                    type: mov.type,
+                                    productName: mov.product.name,
+                                  })
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -469,6 +523,51 @@ export default function MovimentacoesPage() {
             )}
           </CardContent>
         </Card>
+
+        <Dialog
+          open={deleteTarget !== null}
+          onOpenChange={(open) => {
+            if (!open && !isDeleting) setDeleteTarget(null)
+          }}
+        >
+          <DialogContent showCloseButton={!isDeleting}>
+            <DialogHeader>
+              <DialogTitle>Excluir movimentação?</DialogTitle>
+              <DialogDescription>
+                {deleteTarget?.type === "entry" ? "Esta entrada" : "Esta saída"} será removida e o
+                estoque do produto será ajustado.{" "}
+                {deleteTarget && (
+                  <span className="font-medium text-foreground">{deleteTarget.productName}</span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={confirmDeleteMovement}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  "Excluir"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
