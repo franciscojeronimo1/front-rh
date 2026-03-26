@@ -16,13 +16,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { ArrowLeft, Loader2, Save } from "lucide-react"
+import { ArrowLeft, Calculator, Loader2, Save } from "lucide-react"
 import { getProductById, updateProduct, type Product, type UpdateProductRequest } from "@/lib/api"
 import { productUpdateSchema, type ProductUpdateFormValues } from "@/lib/schemas/product"
 import { CategorySelect } from "@/components/category-select"
 import { ActiveToggle } from "@/components/ui/active-toggle"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
+import { PriceCalculatorDialog } from "@/components/price-calculator-dialog"
 
 export default function EditarProdutoPage() {
   const router = useRouter()
@@ -305,13 +306,32 @@ export default function EditarProdutoPage() {
                       <FormItem>
                         <FormLabel>Preço de Custo</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            step="0,01"
-                            placeholder="0,00 "
-                            {...field}
-                            value={field.value || ""}
-                          />
+                          <div className="flex gap-2">
+                            <Input
+                              className="flex-1 min-w-0"
+                              type="number"
+                              step="0,01"
+                              placeholder="0,00 "
+                              {...field}
+                              value={field.value || ""}
+                            />
+                            <PriceCalculatorDialog
+                              variant="percentOfValue"
+                              defaultBase={field.value ?? ""}
+                              onApply={(v) => form.setValue("costPrice", v)}
+                              trigger={
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="shrink-0"
+                                  aria-label="Calculadora: percentual de um valor"
+                                >
+                                  <Calculator />
+                                </Button>
+                              }
+                            />
+                          </div>
                         </FormControl>
                         <FormDescription>Custo unitário</FormDescription>
                         <FormMessage />
@@ -326,13 +346,32 @@ export default function EditarProdutoPage() {
                       <FormItem>
                         <FormLabel>Preço de Venda</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            step="0,01"
-                            placeholder="0,00"
-                            {...field}
-                            value={field.value || ""}
-                          />
+                          <div className="flex gap-2">
+                            <Input
+                              className="flex-1 min-w-0"
+                              type="number"
+                              step="0,01"
+                              placeholder="0,00"
+                              {...field}
+                              value={field.value || ""}
+                            />
+                            <PriceCalculatorDialog
+                              variant="marginOnCost"
+                              costPriceHint={form.watch("costPrice") ?? ""}
+                              onApply={(v) => form.setValue("salePrice", v)}
+                              trigger={
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="shrink-0"
+                                  aria-label="Calculadora: margem sobre o custo"
+                                >
+                                  <Calculator />
+                                </Button>
+                              }
+                            />
+                          </div>
                         </FormControl>
                         <FormDescription>Venda unitário</FormDescription>
                         <FormMessage />
