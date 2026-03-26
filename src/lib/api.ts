@@ -521,6 +521,8 @@ export interface GetProductsParams {
   category?: string
   /** Incluir produtos inativos. O backend usa includeInactive: true=ativos+inativos, false/omitido=apenas ativos */
   includeInactive?: boolean
+  /** Apenas produtos com estoque baixo (currentStock <= minStock). Ordenação por currentStock ascendente no backend. */
+  lowStock?: boolean
   /** Busca por nome, código ou SKU (case insensitive) */
   search?: string
   supplier?: string
@@ -532,6 +534,7 @@ export async function getProducts(params?: GetProductsParams): Promise<ProductsR
   const searchParams = new URLSearchParams()
   if (params?.category) searchParams.append("category", params.category)
   if (params?.includeInactive === true) searchParams.append("includeInactive", "true")
+  if (params?.lowStock === true) searchParams.append("lowStock", "true")
   if (params?.search) searchParams.append("search", params.search)
   if (params?.supplier?.trim()) searchParams.append("supplier", params.supplier.trim())
   if (params?.page !== undefined) searchParams.append("page", params.page.toString())

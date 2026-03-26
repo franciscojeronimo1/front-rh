@@ -49,6 +49,7 @@ import {
   type PaginationInfo,
 } from "@/lib/api"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 
 const LIMIT_OPTIONS = [10, 20, 30] as const
@@ -61,6 +62,7 @@ function buildListQuery(params: {
   active?: string
   supplier?: string
   q?: string
+  lowStock?: boolean
 }) {
   const sp = new URLSearchParams()
   if (params.page != null && params.page > 1) sp.set("page", String(params.page))
@@ -69,6 +71,7 @@ function buildListQuery(params: {
   if (params.active && params.active !== "all") sp.set("active", params.active)
   if (params.supplier?.trim()) sp.set("supplier", params.supplier.trim())
   if (params.q?.trim()) sp.set("q", params.q.trim())
+  if (params.lowStock) sp.set("lowStock", "true")
   const qs = sp.toString()
   return qs ? `?${qs}` : ""
 }
@@ -79,7 +82,7 @@ function getStockRowTone(product: Product): StockRowTone {
   const stock = product.currentStock ?? 0
   const min = product.minStock ?? 0
   if (stock === 0) return "zero"
-  if (min > 0 && stock < min) return "low"
+  if (min > 0 && stock <= min) return "low"
   return "ok"
 }
 
@@ -94,6 +97,7 @@ export default function ProdutosPage() {
   const activeFilter = searchParams.get("active") ?? "all"
   const supplierFilter = searchParams.get("supplier") ?? ""
   const searchFromUrl = searchParams.get("q") ?? ""
+  const lowStockFilter = searchParams.get("lowStock") === "true"
 
   const [products, setProducts] = useState<Product[]>([])
   const [pagination, setPagination] = useState<PaginationInfo | null>(null)
@@ -116,6 +120,7 @@ export default function ProdutosPage() {
       active?: string
       supplier?: string
       q?: string
+      lowStock?: boolean
     }) => {
       const next = buildListQuery({
         page: updates.page ?? page,
@@ -124,10 +129,11 @@ export default function ProdutosPage() {
         active: updates.active ?? activeFilter,
         supplier: updates.supplier !== undefined ? updates.supplier : supplierFilter,
         q: updates.q !== undefined ? updates.q : searchFromUrl,
+        lowStock: updates.lowStock !== undefined ? updates.lowStock : lowStockFilter,
       })
       router.replace(pathname + next, { scroll: false })
     },
-    [pathname, router, page, limit, categoryFilter, activeFilter, supplierFilter, searchFromUrl]
+    [pathname, router, page, limit, categoryFilter, activeFilter, supplierFilter, searchFromUrl, lowStockFilter]
   )
 
   useEffect(() => {
@@ -159,6 +165,7 @@ export default function ProdutosPage() {
       const response = await getProducts({
         category: categoryFilter === "all" ? undefined : categoryFilter,
         includeInactive,
+        lowStock: lowStockFilter ? true : undefined,
         search: searchFromUrl.trim() || undefined,
         supplier: supplierFilter.trim() || undefined,
         page,
@@ -175,7 +182,7 @@ export default function ProdutosPage() {
 
   useEffect(() => {
     loadProducts()
-  }, [categoryFilter, activeFilter, supplierFilter, searchFromUrl, page, limit])
+  }, [categoryFilter, activeFilter, supplierFilter, searchFromUrl, lowStockFilter, page, limit])
 
   useEffect(() => {
     if (!isLoading && products.length === 0 && pagination && pagination.page > 1) {
@@ -262,7 +269,8 @@ export default function ProdutosPage() {
     return matchesActive
   })
 
-  const isLowStock = (product: Product) => product.currentStock < product.minStock
+  const isLowStock = (product: Product) =>
+    (product.currentStock ?? 0) <= (product.minStock ?? 0)
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -315,14 +323,16 @@ export default function ProdutosPage() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Filtros</CardTitle>
-            <CardDescription>Filtre produtos por busca, fornecedor, categoria e status</CardDescription>
+            <CardDescription>
+              Filtre produtos por busca, fornecedor, categoria, status e estoque baixo
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por nome, código ou SKU..."
+                  placeholder="Buscar por nome, código..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
@@ -372,6 +382,18 @@ export default function ProdutosPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Checkbox
+                id="filter-low-stock"
+                checked={lowStockFilter}
+                onCheckedChange={(checked) => {
+                  setPageInputValue("1")
+                  updateListUrl({ lowStock: !!checked, page: 1 })
+                }}
+              >
+                <span className="text-sm font-medium leading-none">Estoque baixo</span>
+              </Checkbox>
             </div>
           </CardContent>
         </Card>
