@@ -1,10 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useRequirePremium } from "@/hooks/useRequirePremium"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   startTimeRecord,
@@ -12,7 +14,7 @@ import {
   getTimeSummary,
   getTimeRecords,
   type TimeSummary,
-  type TimeRecord,
+  type TimeRecordDaySummary,
 } from "@/lib/api"
 import {
   Clock,
@@ -35,7 +37,8 @@ export default function PontoPage() {
   const router = useRouter()
   const { isPremium, isLoading: isLoadingPremium } = useRequirePremium()
   const [summary, setSummary] = useState<TimeSummary | null>(null)
-  const [records, setRecords] = useState<TimeRecord[]>([])
+  const [byDay, setByDay] = useState<TimeRecordDaySummary[]>([])
+  const [historyMonth, setHistoryMonth] = useState(() => format(new Date(), "yyyy-MM"))
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [error, setError] = useState("")
@@ -50,21 +53,21 @@ export default function PontoPage() {
     }
   }, [router])
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoadingData(true)
-      const [summaryData, recordsData] = await Promise.all([
+      const [summaryData, monthData] = await Promise.all([
         getTimeSummary(),
-        getTimeRecords(undefined, undefined),
+        getTimeRecords({ month: historyMonth }),
       ])
       setSummary(summaryData.summary)
-      setRecords(recordsData.records)
+      setByDay(monthData.byDay ?? [])
     } catch (err) {
       console.error("Erro ao carregar dados:", err)
     } finally {
       setIsLoadingData(false)
     }
-  }
+  }, [historyMonth])
 
   useEffect(() => {
     if (isPremium && !isLoadingPremium) {
@@ -73,7 +76,7 @@ export default function PontoPage() {
       window.addEventListener("focus", handleFocus)
       return () => window.removeEventListener("focus", handleFocus)
     }
-  }, [isPremium, isLoadingPremium])
+  }, [isPremium, isLoadingPremium, loadData])
 
   if (isLoadingPremium || !isPremium) {
     return (
@@ -116,23 +119,19 @@ export default function PontoPage() {
     }
   }
 
-  const formatTime = (timeString: string) => {
-    try {
-      return format(parseISO(timeString), "HH:mm:ss", { locale: ptBR })
-    } catch {
-      return timeString
-    }
-  }
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(parseISO(dateString), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
-    } catch {
-      return dateString
-    }
-  }
-
   const isWorking = summary?.status === "started"
+
+  const byDaySorted = [...byDay].sort((a, b) => b.date.localeCompare(a.date))
+
+  const historyMonthLabel = (() => {
+    try {
+      const raw = historyMonth.slice(0, 7) + "-01T12:00:00"
+      const label = format(parseISO(raw), "MMMM 'de' yyyy", { locale: ptBR })
+      return label.charAt(0).toUpperCase() + label.slice(1)
+    } catch {
+      return historyMonth
+    }
+  })()
 
   if (isLoadingData) {
     return (
@@ -342,45 +341,67 @@ export default function PontoPage() {
             </CardContent>
           </Card>
 
-          {/* Histórico do Dia */}
+          {/* Histórico do mês (byDay) */}
           <Card className="flex flex-col h-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <History className="w-5 h-5 text-primary" />
-                Histórico do Dia
+                Histórico do mês
               </CardTitle>
-              <CardDescription>Registros de entrada e saída</CardDescription>
+            
+              <div className="pt-2 space-y-2">
+                <Label htmlFor="ponto-history-month" className="text-muted-foreground">
+                  Mês
+                </Label>
+                <Input
+                  id="ponto-history-month"
+                  type="month"
+                  value={historyMonth}
+                  onChange={(e) => setHistoryMonth(e.target.value)}
+                  className="max-w-[220px]"
+                />
+              </div>
             </CardHeader>
             <CardContent className="flex-1 min-h-0 flex flex-col">
-              {records.length > 0 ? (
+              {byDaySorted.length > 0 ? (
                 <div className="space-y-3 overflow-y-auto max-h-[400px] pr-2">
-                  {records.map((record) => (
+                  {byDaySorted.map((day) => (
                     <div
-                      key={record.id}
-                      className="flex items-center justify-between p-4 rounded-md border bg-card flex-shrink-0"
+                      key={day.date}
+                      className="rounded-md border bg-card p-4 flex-shrink-0 space-y-2"
                     >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                            record.type === "START"
-                              ? "bg-success"
-                              : "bg-destructive"
-                          }`}
-                        />
-                        <div>
-                          <p className="font-medium text-foreground">
-                            {record.type === "START" ? "Entrada" : "Saída"}
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <p className="font-medium text-foreground capitalize">
+                          {format(parseISO(day.date + "T12:00:00"), "EEEE, dd/MM/yyyy", {
+                            locale: ptBR,
+                          })}
+                        </p>
+                        <div className="text-right">
+                          <p className="font-mono text-lg font-semibold text-primary">
+                            {day.totalHours}
                           </p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDate(record.timestamp)}
+                          <p className="text-xs text-muted-foreground">
+                            {day.totalMinutes} min
                           </p>
                         </div>
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="font-mono text-sm font-semibold text-foreground">
-                          {formatTime(record.timestamp)}
-                        </p>
-                      </div>
+                      {day.periods.length > 0 && (
+                        <ul className="text-sm text-muted-foreground space-y-1 border-t border-border/60 pt-2">
+                          {day.periods.map((period, index) => (
+                            <li
+                              key={`${day.date}-${index}`}
+                              className="flex flex-wrap justify-between gap-x-4 gap-y-0.5"
+                            >
+                              <span>
+                                {period.start} – {period.stop || "…"}
+                              </span>
+                              <span className="font-mono tabular-nums">
+                                {Math.floor(period.minutes / 60)}h {period.minutes % 60}m
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -388,7 +409,7 @@ export default function PontoPage() {
                 <div className="text-center py-8 flex-shrink-0">
                   <History className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
                   <p className="text-muted-foreground">
-                    Nenhum registro encontrado para hoje
+                    Nenhum dia com período registrado neste mês
                   </p>
                 </div>
               )}

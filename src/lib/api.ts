@@ -240,9 +240,20 @@ export interface StopTimeRecordResponse {
   message: string
 }
 
+/** Resumo de um dia local (vem em `byDay` quando a lista usa `month` ou `periodDays`). */
+export interface TimeRecordDaySummary {
+  date: string
+  periods: TimePeriod[]
+  totalMinutes: number
+  totalHours: string
+  status: "started" | "stopped"
+}
+
 export interface TimeRecordsResponse {
   records: TimeRecord[]
   summary: TimeSummary
+  /** Presente quando a consulta usa `month` ou `periodDays` (não com `date` único). */
+  byDay?: TimeRecordDaySummary[]
 }
 
 // Iniciar trabalho
@@ -262,19 +273,18 @@ export async function stopTimeRecord(): Promise<StopTimeRecordResponse> {
 }
 
 
-export async function getTimeRecords(date?: string, userId?: string): Promise<TimeRecordsResponse> {
-  const params = new URLSearchParams()
-
-  if (date) {
-    const formattedDate = date.includes("T") ? date.split("T")[0] : date
-    const cleanDate = formattedDate.split("+")[0].split("Z")[0]
-    params.append("date", cleanDate)
-  }
-  if (userId) params.append("userId", userId)
-  const queryString = params.toString() ? `?${params.toString()}` : ""
+/**
+ * Lista batidas e resumo do período. Mesmos filtros que `/time-records/summary`:
+ * sem params = dia atual; `date` = um dia; `month` / `periodDays` = intervalo (com `byDay` no backend).
+ */
+export async function getTimeRecords(
+  paramsOrDate?: GetTimeSummaryParams | string,
+  userId?: string
+): Promise<TimeRecordsResponse> {
+  const opts = normalizeTimeSummaryParams(paramsOrDate, userId)
+  const queryString = buildTimeSummaryQueryString(opts)
   const response = await authenticatedFetchWithRetry(`/time-records${queryString}`)
-  const data = await response.json()
-  return data
+  return response.json()
 }
 
 function normalizeTimeSummaryParams(
