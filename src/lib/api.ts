@@ -461,6 +461,8 @@ export interface Product {
   supplierName?: string | null
   supplierDoc?: string | null
   active: boolean
+  /** ISO date ou datetime; ausente ou null = sem validade */
+  expirationDate?: string | null
   organizationId: string
   createdAt: string
   updatedAt: string
@@ -478,6 +480,8 @@ export interface CreateProductRequest {
   supplierName?: string
   supplierDoc?: string
   active?: boolean
+  /** YYYY-MM-DD ou ISO datetime; omitir = sem validade no banco */
+  expirationDate?: string
 }
 
 export interface UpdateProductRequest {
@@ -493,6 +497,8 @@ export interface UpdateProductRequest {
   supplierName?: string | null
   supplierDoc?: string | null
   active?: boolean
+  /** Data para alterar; null remove a validade */
+  expirationDate?: string | null
 }
 
 export interface PaginationInfo {

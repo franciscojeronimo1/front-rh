@@ -44,12 +44,22 @@ const currentStockSchema = z.string().optional().refine(
   "Estoque atual deve ser um número inteiro >= 0"
 )
 
+const expirationDateSchema = z.string().optional().refine(
+  (val) => {
+    if (val === undefined || val === "") return true
+    const t = Date.parse(val)
+    return !isNaN(t)
+  },
+  "Data de validade inválida"
+)
+
 /** Schema para criação de produto */
 export const productCreateSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   code: z.string().optional(),
   sku: z.string().optional(),
   category: z.string().optional(),
+  expirationDate: expirationDateSchema,
   minStock: minStockSchema,
   unit: z.string().min(1, "Unidade é obrigatória"),
   costPrice: costPriceSchema,
@@ -65,6 +75,7 @@ export const productUpdateSchema = z.object({
   code: z.string().optional(),
   sku: z.string().optional(),
   category: z.string().optional(),
+  expirationDate: expirationDateSchema,
   minStock: minStockOptionalSchema,
   currentStock: currentStockSchema,
   unit: z.string().optional(),

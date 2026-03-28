@@ -48,6 +48,7 @@ export default function EditarProdutoPage() {
         setIsLoading(true)
         const response = await getProductById(productId)
         setProduct(response.product)
+        const exp = response.product.expirationDate
         form.reset({
           name: response.product.name,
           code: response.product.code || "",
@@ -61,6 +62,7 @@ export default function EditarProdutoPage() {
           supplierName: response.product.supplierName || "",
           supplierDoc: response.product.supplierDoc || "",
           active: response.product.active,
+          expirationDate: exp ? exp.split("T")[0] : "",
         })
         setShowSupplierFields(!!(response.product.supplierName || response.product.supplierDoc))
       } catch (err) {
@@ -80,6 +82,7 @@ export default function EditarProdutoPage() {
       setIsSaving(true)
       setError("")
 
+      const exp = data.expirationDate?.trim()
       const requestData: UpdateProductRequest = {
         name: data.name,
         code: data.code || undefined,
@@ -93,6 +96,7 @@ export default function EditarProdutoPage() {
         supplierName: showSupplierFields ? (data.supplierName || null) : null,
         supplierDoc: showSupplierFields ? (data.supplierDoc || null) : null,
         active: data.active,
+        expirationDate: exp || null,
       }
 
       await updateProduct(productId, requestData)
@@ -209,12 +213,12 @@ export default function EditarProdutoPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_11rem_auto] gap-x-4 gap-y-4 items-start">
                   <FormField
                     control={form.control}
                     name="category"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="min-w-0">
                         <FormLabel>Categoria</FormLabel>
                         <FormControl>
                           <CategorySelect
@@ -231,9 +235,29 @@ export default function EditarProdutoPage() {
 
                   <FormField
                     control={form.control}
+                    name="expirationDate"
+                    render={({ field }) => (
+                      <FormItem className="w-full max-w-[11rem] md:max-w-none">
+                        <FormLabel>Validade</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            className="w-full max-w-[11rem]"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>Opcional — limpe para remover</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="active"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="min-w-0 md:min-w-[12rem]">
                         <FormLabel>Produto Ativo</FormLabel>
                         <FormControl>
                           <ActiveToggle

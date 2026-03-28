@@ -45,6 +45,7 @@ export default function NovoProdutoPage() {
       supplierName: "",
       supplierDoc: "",
       active: true,
+      expirationDate: "",
     },
   })
 
@@ -53,6 +54,7 @@ export default function NovoProdutoPage() {
       setIsLoading(true)
       setError("")
 
+      const exp = data.expirationDate?.trim()
       const requestData: CreateProductRequest = {
         name: data.name,
         code: data.code || undefined,
@@ -65,6 +67,7 @@ export default function NovoProdutoPage() {
         supplierName: data.supplierName || undefined,
         supplierDoc: data.supplierDoc || undefined,
         active: data.active ?? true,
+        ...(exp ? { expirationDate: exp } : {}),
       }
 
       await createProduct(requestData)
@@ -156,12 +159,12 @@ export default function NovoProdutoPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_11rem_auto] gap-x-4 gap-y-4 items-start">
                   <FormField
                     control={form.control}
                     name="category"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="min-w-0">
                         <FormLabel>Categoria</FormLabel>
                         <FormControl>
                           <CategorySelect
@@ -178,9 +181,29 @@ export default function NovoProdutoPage() {
 
                   <FormField
                     control={form.control}
+                    name="expirationDate"
+                    render={({ field }) => (
+                      <FormItem className="w-full max-w-[11rem] md:max-w-none">
+                        <FormLabel>Validade</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            className="w-full max-w-[11rem]"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>Opcional</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="active"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="min-w-0 md:min-w-[12rem]">
                         <FormLabel>Produto Ativo</FormLabel>
                         <FormControl>
                           <ActiveToggle
@@ -188,7 +211,6 @@ export default function NovoProdutoPage() {
                             onCheckedChange={field.onChange}
                           />
                         </FormControl>
-                        
                         <FormMessage />
                       </FormItem>
                     )}
