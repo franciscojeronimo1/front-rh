@@ -195,3 +195,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Landing /sobre-nos: desliga enter animations quando o usuário prefere menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  .landing-sobre-nos .animate-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
