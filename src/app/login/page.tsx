@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, Suspense } from "react"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -60,6 +61,12 @@ function LoginForm() {
           <p className="text-muted-foreground">
             Gerencie sua empresa de forma profissional
           </p>
+          <Link
+            href="/sobre-nos"
+            className="mt-4 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Sobre nós
+          </Link>
         </div>
 
         <Card className="shadow-xl border-2">

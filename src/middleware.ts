@@ -13,7 +13,7 @@ const PROTECTED_PATHS = [
 ]
 
 /** Rotas públicas (login, etc.). */
-const PUBLIC_PATHS = ["/login"]
+const PUBLIC_PATHS = ["/login", "/sobre-nos"]
 
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
