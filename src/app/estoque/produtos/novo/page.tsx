@@ -40,6 +40,8 @@ export default function NovoProdutoPage() {
       category: "",
       minStock: "0",
       unit: "UN",
+      initialStock: "",
+      initialStockUnitPrice: "",
       costPrice: "",
       salePrice: "",
       supplierName: "",
@@ -55,6 +57,13 @@ export default function NovoProdutoPage() {
       setError("")
 
       const exp = data.expirationDate?.trim()
+      const initialStockRaw = data.initialStock?.trim()
+      const initialStock =
+        initialStockRaw !== undefined && initialStockRaw !== ""
+          ? parseInt(initialStockRaw, 10)
+          : 0
+      const entryPriceRaw = data.initialStockUnitPrice?.trim()
+      const hasEntryPrice = Boolean(entryPriceRaw)
       const requestData: CreateProductRequest = {
         name: data.name,
         code: data.code || undefined,
@@ -68,6 +77,10 @@ export default function NovoProdutoPage() {
         supplierDoc: data.supplierDoc || undefined,
         active: data.active ?? true,
         ...(exp ? { expirationDate: exp } : {}),
+        ...(initialStock > 0 ? { initialStock } : {}),
+        ...(initialStock > 0 && hasEntryPrice
+          ? { initialStockUnitPrice: parseFloat(entryPriceRaw!) }
+          : {}),
       }
 
       await createProduct(requestData)
@@ -327,6 +340,62 @@ export default function NovoProdutoPage() {
                       </FormItem>
                     )}
                   />
+                </div>
+
+                <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Estoque na criação</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Opcional. Se informar quantidade maior que zero, o sistema registra uma entrada. O preço unitário da entrada pode ser
+                      o custo cadastral ou o valor abaixo. 
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="initialStock"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Estoque inicial</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={0}
+                              step={1}
+                              placeholder="0"
+                              {...field}
+                              value={field.value ?? ""}
+                            />
+                          </FormControl>
+                          <FormDescription>Deixe vazio ou 0 para começar sem estoque</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="initialStockUnitPrice"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preço unitário da entrada</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min={0}
+                              placeholder="Usa preço de custo se vazio"
+                              {...field}
+                              value={field.value ?? ""}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Só se aplica com estoque inicial maior que zero.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
 
                 <Checkbox

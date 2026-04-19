@@ -482,6 +482,8 @@ export interface CreateProductRequest {
   active?: boolean
   /** YYYY-MM-DD ou ISO datetime; omitir = sem validade no banco */
   expirationDate?: string
+  initialStock?: number
+  initialStockUnitPrice?: number
 }
 
 export interface UpdateProductRequest {
