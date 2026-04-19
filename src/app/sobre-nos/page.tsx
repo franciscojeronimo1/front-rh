@@ -15,6 +15,7 @@ import {
   Headphones,
   Sparkles,
   ChevronDown,
+  Video,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,10 +26,12 @@ const WHATSAPP_MESSAGE = encodeURIComponent(
   "Olá! Gostaria de agendar um teste de 30 dias no Sistema CGS."
 )
 
+const HERO_PRESENTATION_VIDEO_SRC = "/videos/sistema-cgs-gestao-centralizada-720p.mp4"
+
 export const metadata: Metadata = {
   title: "Sobre nós | Sistema CGS",
   description:
-    "Conheça o Sistema CGS: gestão empresarial com dashboard, ponto, colaboradores, estoque e administração. Agende um teste gratuito de 30 dias.",
+    "Conheça o Sistema CGS: gestão empresarial com dashboard, ponto, colaboradores, estoque e administração. Assista à apresentação em vídeo e agende um teste gratuito de 30 dias.",
 }
 
 const trustChips = [
@@ -337,48 +340,50 @@ export default function SobreNosPage() {
 
               <div
                 className={cn(
-                  "relative mx-auto w-full max-w-md lg:mx-0 lg:max-w-none",
+                  "relative mx-auto w-full max-w-xl lg:mx-0 lg:max-w-none",
                   "animate-in fade-in slide-in-from-bottom-6 zoom-in-95 duration-700 fill-mode-both delay-200"
                 )}
-                aria-hidden
               >
-                <div className="rounded-2xl border border-border/60 bg-linear-to-br from-card via-card to-primary/7 p-1 shadow-2xl dark:to-primary/10">
-                  <div className="overflow-hidden rounded-[0.875rem] border border-border/50 bg-muted/30 dark:bg-muted/20">
+                <div className="mb-4 flex flex-col items-center gap-2 lg:items-end">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                    <Video className="h-3.5 w-3.5" aria-hidden />
+                    Apresentação em vídeo
+                  </span>
+                  <p className="text-balance text-center text-lg font-semibold text-foreground lg:text-right">
+                    Veja o Sistema CGS em ação
+                  </p>
+                  <p className="text-pretty text-center text-sm text-muted-foreground lg:max-w-md lg:text-right">
+                    Tour pela gestão centralizada — ideal para quem está conhecendo o produto pela primeira vez.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/60 bg-linear-to-br from-card via-card to-primary/7 p-1 shadow-2xl ring-1 ring-primary/10 dark:to-primary/10 dark:ring-primary/20">
+                  <div className="overflow-hidden rounded-[0.875rem] border border-border/50 bg-black">
                     <div className="flex items-center gap-2 border-b border-border/60 bg-muted/50 px-4 py-3 dark:bg-muted/30">
                       <span className="h-2.5 w-2.5 rounded-full bg-red-400/90" />
                       <span className="h-2.5 w-2.5 rounded-full bg-amber-400/90" />
                       <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/90" />
-                      <span className="ml-2 truncate text-xs text-muted-foreground">app.cgs — visão geral</span>
+                      <span className="ml-2 truncate text-xs text-muted-foreground">
+                        Sistema CGS — Gestão centralizada
+                      </span>
                     </div>
-                    <div className="space-y-3 p-4">
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="rounded-lg border border-border/60 bg-background/90 p-3 shadow-sm dark:bg-card/80">
-                          <LayoutDashboard className="mb-2 h-5 w-5 text-primary" />
-                          <div className="h-2 w-12 rounded bg-muted" />
-                          <div className="mt-2 h-8 rounded bg-primary/10" />
-                        </div>
-                        <div className="rounded-lg border border-border/60 bg-background/90 p-3 shadow-sm dark:bg-card/80">
-                          <Users className="mb-2 h-5 w-5 text-primary" />
-                          <div className="h-2 w-10 rounded bg-muted" />
-                          <div className="mt-2 space-y-1">
-                            <div className="h-2 rounded bg-muted" />
-                            <div className="h-2 w-4/5 rounded bg-muted" />
-                          </div>
-                        </div>
-                        <div className="rounded-lg border border-border/60 bg-background/90 p-3 shadow-sm dark:bg-card/80">
-                          <Package className="mb-2 h-5 w-5 text-primary" />
-                          <div className="h-2 w-14 rounded bg-muted" />
-                          <div className="mt-2 h-10 rounded bg-chart-2/15" />
-                        </div>
-                      </div>
-                      <div className="flex gap-2 rounded-lg border border-dashed border-primary/25 bg-primary/4 p-4 dark:bg-primary/10">
-                        <div className="flex-1 space-y-2">
-                          <div className="h-2 w-3/4 max-w-[180px] rounded bg-muted" />
-                          <div className="h-2 w-full max-w-[220px] rounded bg-muted/70" />
-                          <div className="h-2 w-5/6 max-w-[200px] rounded bg-muted/50" />
-                        </div>
-                        <FileBarChart className="h-10 w-10 shrink-0 text-primary/40" />
-                      </div>
+                    <div className="relative aspect-video bg-black">
+                      <video
+                        className="h-full w-full object-contain"
+                        controls
+                        playsInline
+                        preload="metadata"
+                        aria-label="Vídeo de apresentação do Sistema CGS — gestão centralizada"
+                      >
+                        <source src={HERO_PRESENTATION_VIDEO_SRC} type="video/mp4" />
+                        Seu navegador não suporta reprodução de vídeo.{" "}
+                        <a
+                          href={HERO_PRESENTATION_VIDEO_SRC}
+                          className="text-primary underline underline-offset-4"
+                        >
+                          Baixar o arquivo
+                        </a>
+                        .
+                      </video>
                     </div>
                   </div>
                 </div>
