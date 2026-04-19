@@ -58,6 +58,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
+import { isPlaceholderExpirationDate } from "@/lib/product-expiration"
 
 const LIMIT_OPTIONS = [10, 20, 30] as const
 const SEARCH_DEBOUNCE_MS = 400
@@ -95,8 +96,8 @@ function getStockRowTone(product: Product): StockRowTone {
 
 /** Exibe validade em dd/mm/aaaa sem deslocar fuso (YYYY-MM-DD do backend). */
 function formatProductExpiration(iso?: string | null): string {
-  if (!iso) return "—"
-  const datePart = iso.split("T")[0]
+  if (isPlaceholderExpirationDate(iso)) return "—"
+  const datePart = iso!.split("T")[0]
   const [y, m, d] = datePart.split("-").map(Number)
   if (!y || !m || !d) return "—"
   return new Intl.DateTimeFormat("pt-BR", {
@@ -107,8 +108,8 @@ function formatProductExpiration(iso?: string | null): string {
 }
 
 function isProductExpirationPast(iso?: string | null): boolean {
-  if (!iso) return false
-  const datePart = iso.split("T")[0]
+  if (isPlaceholderExpirationDate(iso)) return false
+  const datePart = iso!.split("T")[0]
   const [y, m, d] = datePart.split("-").map(Number)
   if (!y || !m || !d) return false
   const end = new Date(y, m - 1, d, 23, 59, 59, 999)

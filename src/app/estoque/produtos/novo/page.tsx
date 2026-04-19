@@ -24,6 +24,7 @@ import { ActiveToggle } from "@/components/ui/active-toggle"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { PriceCalculatorDialog } from "@/components/price-calculator-dialog"
+import { expirationDateToApiValue } from "@/lib/product-expiration"
 
 export default function NovoProdutoPage() {
   const router = useRouter()
@@ -56,7 +57,7 @@ export default function NovoProdutoPage() {
       setIsLoading(true)
       setError("")
 
-      const exp = data.expirationDate?.trim()
+      const exp = expirationDateToApiValue(data.expirationDate)
       const initialStockRaw = data.initialStock?.trim()
       const initialStock =
         initialStockRaw !== undefined && initialStockRaw !== ""
@@ -76,7 +77,7 @@ export default function NovoProdutoPage() {
         supplierName: data.supplierName || undefined,
         supplierDoc: data.supplierDoc || undefined,
         active: data.active ?? true,
-        ...(exp ? { expirationDate: exp } : {}),
+        ...(exp != null ? { expirationDate: exp } : {}),
         ...(initialStock > 0 ? { initialStock } : {}),
         ...(initialStock > 0 && hasEntryPrice
           ? { initialStockUnitPrice: parseFloat(entryPriceRaw!) }

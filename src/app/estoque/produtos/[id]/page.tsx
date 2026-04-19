@@ -24,6 +24,11 @@ import { ActiveToggle } from "@/components/ui/active-toggle"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { PriceCalculatorDialog } from "@/components/price-calculator-dialog"
+import {
+  expirationDateToApiValue,
+  expirationDateToInputValue,
+  normalizedExpirationFromApi,
+} from "@/lib/product-expiration"
 
 export default function EditarProdutoPage() {
   const router = useRouter()
@@ -48,7 +53,6 @@ export default function EditarProdutoPage() {
         setIsLoading(true)
         const response = await getProductById(productId)
         setProduct(response.product)
-        const exp = response.product.expirationDate
         form.reset({
           name: response.product.name,
           code: response.product.code || "",
@@ -62,7 +66,7 @@ export default function EditarProdutoPage() {
           supplierName: response.product.supplierName || "",
           supplierDoc: response.product.supplierDoc || "",
           active: response.product.active,
-          expirationDate: exp ? exp.split("T")[0] : "",
+          expirationDate: expirationDateToInputValue(response.product.expirationDate),
         })
         setShowSupplierFields(!!(response.product.supplierName || response.product.supplierDoc))
       } catch (err) {
@@ -82,7 +86,6 @@ export default function EditarProdutoPage() {
       setIsSaving(true)
       setError("")
 
-      const exp = data.expirationDate?.trim()
       const requestData: UpdateProductRequest = {
         name: data.name,
         code: data.code || undefined,
@@ -96,7 +99,12 @@ export default function EditarProdutoPage() {
         supplierName: showSupplierFields ? (data.supplierName || null) : null,
         supplierDoc: showSupplierFields ? (data.supplierDoc || null) : null,
         active: data.active,
-        expirationDate: exp || null,
+      }
+
+      const nextExpiration = expirationDateToApiValue(data.expirationDate)
+      const prevExpiration = product ? normalizedExpirationFromApi(product.expirationDate) : null
+      if (nextExpiration !== prevExpiration) {
+        requestData.expirationDate = nextExpiration
       }
 
       await updateProduct(productId, requestData)
