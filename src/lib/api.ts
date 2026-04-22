@@ -414,9 +414,21 @@ export interface Subscription {
   cancelAtPeriodEnd?: boolean
 }
 
+/** Deduplica GET /subscription em paralelo (dois sidebars no shell + guards premium). */
+let subscriptionRequestInFlight: Promise<Subscription> | null = null
+
 export async function getSubscription(): Promise<Subscription> {
-  const response = await authenticatedFetch("/subscription")
-  return response.json()
+  if (subscriptionRequestInFlight) {
+    return subscriptionRequestInFlight
+  }
+  const started = (async () => {
+    const response = await authenticatedFetch("/subscription")
+    return response.json() as Promise<Subscription>
+  })()
+  subscriptionRequestInFlight = started.finally(() => {
+    subscriptionRequestInFlight = null
+  })
+  return subscriptionRequestInFlight
 }
 
 export interface CreateCheckoutSessionResponse {
