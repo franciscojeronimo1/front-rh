@@ -452,7 +452,7 @@ export default function ProdutosPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <TableSkeleton rows={8} columns={12} />
+              <TableSkeleton rows={8} columns={13} />
             ) : filteredProducts.length === 0 ? (
               <div className="text-center py-12">
                 <PackagePlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -466,7 +466,7 @@ export default function ProdutosPage() {
               </div>
             ) : (
               <div className="overflow-x-auto rounded-lg border shadow-sm -mx-1 px-1 sm:mx-0 sm:px-0">
-                <Table className="min-w-[980px] w-full text-xs sm:text-[13px]">
+                <Table className="min-w-[1060px] w-full text-xs sm:text-[13px]">
                   <TableHeader>
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
                       <TableHead className={cn(tableHeadCompact, "min-w-[140px] max-w-[220px]")}>Nome</TableHead>
@@ -489,6 +489,9 @@ export default function ProdutosPage() {
                         )}
                       >
                         P. médio
+                      </TableHead>
+                      <TableHead className={cn(tableHeadCompact, "min-w-[84px] text-right whitespace-nowrap")}>
+                        P. venda
                       </TableHead>
                       <TableHead className={cn(tableHeadCompact, "min-w-[68px]")}>Status</TableHead>
                       <TableHead className={cn(tableHeadCompact, "w-10 min-w-10 text-right")} />
@@ -589,6 +592,15 @@ export default function ProdutosPage() {
                                 currency: "BRL",
                                 maximumFractionDigits: 2,
                               }).format(parseFloat(product.averageCost))
+                            : "—"}
+                        </TableCell>
+                        <TableCell className={cn(tableCellCompact, "text-right whitespace-nowrap tabular-nums")}>
+                          {product.salePrice
+                            ? new Intl.NumberFormat("pt-BR", {
+                                style: "currency",
+                                currency: "BRL",
+                                maximumFractionDigits: 2,
+                              }).format(parseFloat(product.salePrice))
                             : "—"}
                         </TableCell>
                         <TableCell className={tableCellCompact}>
