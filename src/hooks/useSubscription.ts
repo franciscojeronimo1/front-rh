@@ -8,7 +8,7 @@ export function useSubscription() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchSubscription = useCallback(async () => {
+  const fetchSubscription = useCallback(async (opts?: { bypassCache?: boolean }) => {
     if (typeof window === "undefined") return
     const token = localStorage.getItem("token")
     if (!token) {
@@ -19,7 +19,7 @@ export function useSubscription() {
     try {
       setIsLoading(true)
       setError(null)
-      const data = await getSubscription()
+      const data = await getSubscription({ bypassCache: opts?.bypassCache === true })
       setSubscription(data)
     } catch (err) {
       setSubscription(null)
@@ -49,6 +49,6 @@ export function useSubscription() {
     isTrialing,
     isLoading,
     error,
-    refetch: fetchSubscription,
+    refetch: () => fetchSubscription({ bypassCache: true }),
   }
 }

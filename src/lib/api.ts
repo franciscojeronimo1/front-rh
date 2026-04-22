@@ -1,4 +1,10 @@
 import { getAuthToken, redirectToLogin } from "@/lib/auth"
+import {
+  getSubscriptionCacheGeneration,
+  getSubscriptionFromMemoryCache,
+  registerSubscriptionInflightClear,
+  setSubscriptionMemoryCache,
+} from "@/lib/subscription-memory-cache"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"
 
@@ -414,16 +420,32 @@ export interface Subscription {
   cancelAtPeriodEnd?: boolean
 }
 
-/** Deduplica GET /subscription em paralelo (dois sidebars no shell + guards premium). */
+/**
+ * Deduplica GET /subscription em paralelo e usa cache em memória (~60s) para reduzir
+ * rajadas sequenciais (navegação / vários hooks). Use `bypassCache` após checkout.
+ */
 let subscriptionRequestInFlight: Promise<Subscription> | null = null
 
-export async function getSubscription(): Promise<Subscription> {
+registerSubscriptionInflightClear(() => {
+  subscriptionRequestInFlight = null
+})
+
+export async function getSubscription(options?: { bypassCache?: boolean }): Promise<Subscription> {
+  if (!options?.bypassCache) {
+    const fromMemory = getSubscriptionFromMemoryCache()
+    if (fromMemory) {
+      return fromMemory
+    }
+  }
   if (subscriptionRequestInFlight) {
     return subscriptionRequestInFlight
   }
+  const genAtFetchStart = getSubscriptionCacheGeneration()
   const started = (async () => {
     const response = await authenticatedFetch("/subscription")
-    return response.json() as Promise<Subscription>
+    const data = (await response.json()) as Subscription
+    setSubscriptionMemoryCache(data, genAtFetchStart)
+    return data
   })()
   subscriptionRequestInFlight = started.finally(() => {
     subscriptionRequestInFlight = null

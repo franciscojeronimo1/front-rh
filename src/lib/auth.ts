@@ -3,6 +3,8 @@
  * Mantém token sincronizado entre localStorage e cookie para o middleware Next.js.
  */
 
+import { resetSubscriptionCacheForNewSession } from "@/lib/subscription-memory-cache"
+
 export const AUTH_COOKIE_NAME = "auth-token"
 /** Cookie expira em 7 dias (em segundos). */
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60
@@ -13,6 +15,7 @@ const COOKIE_MAX_AGE = 7 * 24 * 60 * 60
  */
 export function setAuthToken(token: string): void {
   if (typeof window === "undefined") return
+  resetSubscriptionCacheForNewSession()
   localStorage.setItem("token", token)
   document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`
 }
@@ -23,6 +26,7 @@ export function setAuthToken(token: string): void {
  */
 export function clearAuth(): void {
   if (typeof window === "undefined") return
+  resetSubscriptionCacheForNewSession()
   localStorage.removeItem("token")
   localStorage.removeItem("user")
   document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`
