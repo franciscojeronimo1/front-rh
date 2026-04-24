@@ -20,25 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  ArrowLeft,
-  Loader2,
-  ArrowDown,
-  ArrowUp,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  History,
-  Pencil,
-  Trash2,
-} from "lucide-react"
+import { Loader2, Search, History, Pencil, Trash2 } from "lucide-react"
 import { TableSkeleton } from "@/components/ui/table-skeleton"
 import {
   deleteStockEntry,
   deleteStockExit,
   getStockMovements,
   type StockMovementsResponse,
-  type StockMovement,
 } from "@/lib/api"
 import { ProductCombobox } from "@/components/product-combobox"
 import Link from "next/link"
@@ -53,6 +41,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { estoqueRelatoriosLayout } from "@/lib/estoque/dashboard-tokens"
+import { formatBrl } from "@/lib/estoque/relatorios-utils"
+import { EstoqueSubpageHeader, MovementTypeBadge, TablePaginationFooter } from "@/components/estoque"
 
 export default function MovimentacoesPage() {
   const router = useRouter()
@@ -121,18 +112,24 @@ export default function MovimentacoesPage() {
     }
   }
 
+  /* eslint-disable react-hooks/exhaustive-deps -- loadMovements lê estado via closure */
   useEffect(() => {
-    loadMovements()
-  }, [page, limit,])
+    queueMicrotask(() => {
+      void loadMovements()
+    })
+  }, [page, limit])
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   useEffect(() => {
-    setPageInputValue(page.toString())
+    queueMicrotask(() => {
+      setPageInputValue(page.toString())
+    })
   }, [page])
 
   const handleFilter = () => {
     setPage(1)
     setPageInputValue("1")
-    loadMovements({ page: 1 })
+    void loadMovements({ page: 1 })
   }
 
   const handleClearFilters = () => {
@@ -144,7 +141,7 @@ export default function MovimentacoesPage() {
     setType("all")
     setPage(1)
     setPageInputValue("1")
-    loadMovements({
+    void loadMovements({
       page: 1,
       dateFrom: "",
       dateTo: "",
@@ -187,83 +184,51 @@ export default function MovimentacoesPage() {
     }
   }
 
-  const formatType = (movement: StockMovement) => {
-    if (movement.type === "entry") {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400">
-          <ArrowDown className="h-3 w-3" />
-          Entrada
-        </span>
-      )
-    }
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600 dark:text-red-400">
-        <ArrowUp className="h-3 w-3" />
-        Saída
-      </span>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => router.push("/estoque")}
-              className="h-10 w-10"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Movimentações</h1>
-              <p className="text-muted-foreground">
-                Histórico de entradas e saídas do estoque
-              </p>
-            </div>
-          </div>
-        </div>
+    <div className={estoqueRelatoriosLayout.page}>
+      <div className={estoqueRelatoriosLayout.container}>
+        <EstoqueSubpageHeader
+          title="Movimentações"
+          subtitle="Histórico de entradas e saídas do estoque"
+          onBack={() => router.push("/estoque")}
+        />
 
         {error && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        {/* Filtros */}
-        <Card className="mb-6">
+        <Card className={estoqueRelatoriosLayout.card}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-slate-900">
+              <Search className="h-5 w-5 text-blue-600" />
               Filtros
             </CardTitle>
-            <CardDescription>
-              Filtre por período, produto, fornecedor ou cliente
-            </CardDescription>
+            <CardDescription>Filtre por período, produto, fornecedor ou cliente</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="text-sm font-medium mb-1 block">Data inicial</label>
+                <label className="mb-1 block text-sm font-medium">Data inicial</label>
                 <Input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
+                  className="rounded-xl border-slate-200"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Data final</label>
+                <label className="mb-1 block text-sm font-medium">Data final</label>
                 <Input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
+                  className="rounded-xl border-slate-200"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Produto</label>
+                <label className="mb-1 block text-sm font-medium">Produto</label>
                 <ProductCombobox
                   value={productId}
                   onChange={setProductId}
@@ -271,9 +236,9 @@ export default function MovimentacoesPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Tipo</label>
+                <label className="mb-1 block text-sm font-medium">Tipo</label>
                 <Select value={type} onValueChange={(v) => setType(v as "entry" | "exit" | "all")}>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-xl border-slate-200">
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -284,56 +249,60 @@ export default function MovimentacoesPage() {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Fornecedor</label>
+                <label className="mb-1 block text-sm font-medium">Fornecedor</label>
                 <Input
                   placeholder="Buscar por fornecedor"
                   value={supplier}
                   onChange={(e) => setSupplier(e.target.value)}
+                  className="rounded-xl border-slate-200"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Cliente</label>
+                <label className="mb-1 block text-sm font-medium">Cliente</label>
                 <Input
                   placeholder="Buscar por cliente"
                   value={client}
                   onChange={(e) => setClient(e.target.value)}
+                  className="rounded-xl border-slate-200"
                 />
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={handleFilter} disabled={isLoading}>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handleFilter}
+                disabled={isLoading}
+                className="rounded-xl bg-blue-600 hover:bg-blue-700"
+              >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    <Search className="h-4 w-4 mr-2" />
+                    <Search className="mr-2 h-4 w-4" />
                     Filtrar
                   </>
                 )}
               </Button>
-              <Button variant="outline" onClick={handleClearFilters}>
+              <Button variant="outline" onClick={handleClearFilters} className="rounded-xl border-slate-200">
                 Limpar filtros
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Tabela */}
-        <Card>
+        <Card className={estoqueRelatoriosLayout.card}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5" />
-              Histórico de Movimentações
+            <CardTitle className="flex items-center gap-2 text-slate-900">
+              <History className="h-5 w-5 text-slate-600" />
+              Histórico de movimentações
             </CardTitle>
             <CardDescription>
               {data?.movements.length === 0 ? (
                 "Nenhuma movimentação encontrada"
               ) : pagination ? (
                 <>
-                  Mostrando{" "}
-                  {(pagination.page - 1) * pagination.limit + 1}-
-                  {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-                  de {pagination.total} movimentações
+                  Mostrando {(pagination.page - 1) * pagination.limit + 1}-
+                  {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total}{" "}
+                  movimentações
                 </>
               ) : (
                 "Lista de entradas e saídas"
@@ -344,10 +313,8 @@ export default function MovimentacoesPage() {
             {isLoading ? (
               <TableSkeleton rows={8} columns={10} />
             ) : !data?.movements.length ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">
-                  Nenhuma movimentação encontrada. Ajuste os filtros ou registre entradas e saídas.
-                </p>
+              <div className="py-12 text-center text-muted-foreground">
+                Nenhuma movimentação encontrada. Ajuste os filtros ou registre entradas e saídas.
               </div>
             ) : (
               <>
@@ -361,7 +328,7 @@ export default function MovimentacoesPage() {
                         setPage(1)
                       }}
                     >
-                      <SelectTrigger className="w-20">
+                      <SelectTrigger className="w-20 rounded-xl border-slate-200">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -382,10 +349,10 @@ export default function MovimentacoesPage() {
                         <TableHead>Data</TableHead>
                         <TableHead>Produto</TableHead>
                         <TableHead>Qtd</TableHead>
-                        <TableHead>Preço Unit.</TableHead>
+                        <TableHead>Preço unit.</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead>Registrado por</TableHead>
-                        <TableHead>Fornecedor / Cliente</TableHead>
+                        <TableHead>Fornecedor / cliente</TableHead>
                         <TableHead>Observações</TableHead>
                         <TableHead className="w-[100px]">Ações</TableHead>
                       </TableRow>
@@ -393,56 +360,45 @@ export default function MovimentacoesPage() {
                     <TableBody>
                       {data.movements.map((mov) => (
                         <TableRow key={mov.id}>
-                          <TableCell>{formatType(mov)}</TableCell>
+                          <TableCell>
+                            <MovementTypeBadge movement={mov} />
+                          </TableCell>
                           <TableCell>
                             {format(new Date(mov.createdAt), "dd/MM/yyyy", {
                               locale: ptBR,
                             })}
                           </TableCell>
                           <TableCell className="font-medium">
-                            <span className="block truncate max-w-[180px]" title={`${mov.product.name}${mov.product.code ? ` (${mov.product.code})` : ""}`}>
+                            <span
+                              className="block max-w-[180px] truncate"
+                              title={`${mov.product.name}${mov.product.code ? ` (${mov.product.code})` : ""}`}
+                            >
                               {mov.product.name}
                               {mov.product.code && (
-                                <span className="text-muted-foreground ml-1">
-                                  ({mov.product.code})
-                                </span>
+                                <span className="ml-1 text-muted-foreground">({mov.product.code})</span>
                               )}
                             </span>
                           </TableCell>
                           <TableCell>{mov.quantity}</TableCell>
-                          <TableCell>
-                            {new Intl.NumberFormat("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            }).format(mov.unitPrice)}
-                          </TableCell>
-                          <TableCell>
-                            {new Intl.NumberFormat("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            }).format(mov.totalPrice)}
-                          </TableCell>
+                          <TableCell>{formatBrl(mov.unitPrice)}</TableCell>
+                          <TableCell>{formatBrl(mov.totalPrice)}</TableCell>
                           <TableCell>{mov.registeredBy.name}</TableCell>
                           <TableCell>
-                            <span className="block truncate max-w-[140px]" title={mov.type === "entry" ? (mov.supplierName || "") : (mov.clientName || "")}>
-                              {mov.type === "entry"
-                                ? mov.supplierName || "-"
-                                : mov.clientName || "-"}
+                            <span
+                              className="block max-w-[140px] truncate"
+                              title={mov.type === "entry" ? mov.supplierName || "" : mov.clientName || ""}
+                            >
+                              {mov.type === "entry" ? mov.supplierName || "-" : mov.clientName || "-"}
                             </span>
                           </TableCell>
                           <TableCell>
-                            <span className="block truncate max-w-[200px]" title={mov.notes || ""}>
+                            <span className="block max-w-[200px] truncate" title={mov.notes || ""}>
                               {mov.notes || "-"}
                             </span>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-0.5">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                asChild
-                              >
+                              <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
                                 <Link
                                   href={
                                     mov.type === "entry"
@@ -476,48 +432,15 @@ export default function MovimentacoesPage() {
                     </TableBody>
                   </Table>
                 </div>
-                {pagination && pagination.totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>Página</span>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={pagination.totalPages}
-                        value={pageInputValue || pagination.page}
-                        onChange={(e) => setPageInputValue(e.target.value)}
-                        onBlur={() => goToPage(pageInputValue || pagination.page.toString())}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter")
-                            goToPage(pageInputValue || pagination.page.toString())
-                        }}
-                        className="w-14 h-8 text-center px-1 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [appearance:textfield]"
-                      />
-                      <span>de {pagination.totalPages}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={!pagination.hasPrev}
-                      >
-                        <ChevronLeft className="h-4 w-4 mr-1" />
-                        Anterior
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setPage((p) => Math.min(pagination.totalPages, p + 1))
-                        }
-                        disabled={!pagination.hasNext}
-                      >
-                        Próxima
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </div>
-                  </div>
+                {pagination && (
+                  <TablePaginationFooter
+                    pagination={pagination}
+                    pageInputValue={pageInputValue}
+                    onPageInputChange={setPageInputValue}
+                    onCommitPage={goToPage}
+                    onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                    onNext={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                  />
                 )}
               </>
             )}
@@ -534,8 +457,8 @@ export default function MovimentacoesPage() {
             <DialogHeader>
               <DialogTitle>Excluir movimentação?</DialogTitle>
               <DialogDescription>
-                {deleteTarget?.type === "entry" ? "Esta entrada" : "Esta saída"} será removida e o
-                estoque do produto será ajustado.{" "}
+                {deleteTarget?.type === "entry" ? "Esta entrada" : "Esta saída"} será removida e o estoque do
+                produto será ajustado.{" "}
                 {deleteTarget && (
                   <span className="font-medium text-foreground">{deleteTarget.productName}</span>
                 )}
@@ -553,12 +476,12 @@ export default function MovimentacoesPage() {
               <Button
                 type="button"
                 variant="destructive"
-                onClick={confirmDeleteMovement}
+                onClick={() => void confirmDeleteMovement()}
                 disabled={isDeleting}
               >
                 {isDeleting ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Excluindo...
                   </>
                 ) : (
