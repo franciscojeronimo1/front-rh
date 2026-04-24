@@ -37,3 +37,16 @@ export const estoqueDashboardLayout = {
   card: "rounded-2xl border-0 bg-white shadow-md shadow-slate-200/60",
   cardInteractive: "rounded-2xl border-0 bg-white shadow-md shadow-slate-200/50 transition-all hover:-translate-y-0.5 hover:shadow-lg",
 } as const
+
+/** Relatórios de estoque: alinhado ao dashboard, com ritmo um pouco mais compacto. */
+export const estoqueRelatoriosLayout = {
+  page: estoqueDashboardLayout.page,
+  container: "mx-auto max-w-7xl space-y-6",
+  card: estoqueDashboardLayout.card,
+  /** Mini-KPIs dentro dos relatórios (uso diário / semanal). */
+  statTile: "rounded-xl border border-slate-100 bg-white p-4 shadow-sm",
+  /** Blocos maiores (ex.: valor total do relatório). */
+  statBlock: "rounded-xl border border-slate-100 bg-white p-6 shadow-sm",
+  statBlockPrimary: "rounded-xl border border-blue-100 bg-blue-50/90 p-6 shadow-sm",
+  tabGrid: "grid grid-cols-2 gap-3 md:grid-cols-5",
+} as const
