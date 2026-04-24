@@ -50,3 +50,10 @@ export const estoqueRelatoriosLayout = {
   statBlockPrimary: "rounded-xl border border-blue-100 bg-blue-50/90 p-6 shadow-sm",
   tabGrid: "grid grid-cols-2 gap-3 md:grid-cols-5",
 } as const
+
+/** Formulários estreitos (entrada / saída / edição). */
+export const estoqueFormLayout = {
+  page: estoqueRelatoriosLayout.page,
+  narrow: "mx-auto w-full max-w-3xl space-y-6",
+  loadingCenter: "flex min-h-[50vh] items-center justify-center",
+} as const

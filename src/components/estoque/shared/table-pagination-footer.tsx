@@ -25,7 +25,7 @@ export function TablePaginationFooter({
   if (pagination.totalPages <= 1) return null
 
   const commit = () =>
-    onCommitPage(pageInputValue || pagination.page.toString())
+    onCommitPage(pageInputValue !== "" ? pageInputValue : pagination.page.toString())
 
   return (
     <div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -41,16 +41,28 @@ export function TablePaginationFooter({
           onKeyDown={(e) => {
             if (e.key === "Enter") commit()
           }}
-          className="h-8 w-14 px-1 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="h-8 w-14 rounded-lg px-1 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
         <span>de {pagination.totalPages}</span>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onPrev} disabled={!pagination.hasPrev}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-xl border-slate-200"
+          onClick={onPrev}
+          disabled={!pagination.hasPrev}
+        >
           <ChevronLeft className="mr-1 h-4 w-4" />
           Anterior
         </Button>
-        <Button variant="outline" size="sm" onClick={onNext} disabled={!pagination.hasNext}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-xl border-slate-200"
+          onClick={onNext}
+          disabled={!pagination.hasNext}
+        >
           Próxima
           <ChevronRight className="ml-1 h-4 w-4" />
         </Button>

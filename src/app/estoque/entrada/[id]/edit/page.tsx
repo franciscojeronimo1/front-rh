@@ -17,7 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { ArrowLeft, Loader2, ArrowDown } from "lucide-react"
+import { Loader2, ArrowDown } from "lucide-react"
 import {
   deleteStockEntry,
   getStockEntryById,
@@ -35,6 +35,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { estoqueFormLayout, estoqueRelatoriosLayout } from "@/lib/estoque/dashboard-tokens"
+import { EstoqueSubpageHeader } from "@/components/estoque"
 
 const entrySchema = z.object({
   productId: z.string().min(1, "Produto é obrigatório"),
@@ -161,41 +163,32 @@ export default function EditarEntradaPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-8 flex items-center justify-center">
+      <div className={`${estoqueFormLayout.page} ${estoqueFormLayout.loadingCenter}`}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-8 flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => router.push("/estoque/movimentacoes")}
-            className="h-10 w-10"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Editar Entrada</h1>
-            <p className="text-muted-foreground">Altere os dados da entrada de material</p>
-          </div>
-        </div>
+    <div className={estoqueFormLayout.page}>
+      <div className={estoqueFormLayout.narrow}>
+        <EstoqueSubpageHeader
+          title="Editar entrada"
+          subtitle="Altere os dados da entrada de material"
+          onBack={() => router.push("/estoque/movimentacoes")}
+        />
 
         {error && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        <Card>
+        <Card className={estoqueRelatoriosLayout.card}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ArrowDown className="h-5 w-5 text-success" />
-              Editar Entrada de Estoque
+            <CardTitle className="flex items-center gap-2 text-slate-900">
+              <ArrowDown className="h-5 w-5 text-emerald-600" />
+              Editar entrada de estoque
             </CardTitle>
             <CardDescription>
               Ao alterar quantidade ou preço unitário, o custo médio do produto será atualizado
@@ -346,11 +339,11 @@ export default function EditarEntradaPage() {
                   )}
                 />
 
-                <div className="flex flex-col-reverse gap-4 sm:flex-row sm:justify-between sm:items-center">
+                <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                    className="rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10"
                     onClick={() => setDeleteDialogOpen(true)}
                     disabled={isSubmitting || isDeleting}
                   >
@@ -360,12 +353,17 @@ export default function EditarEntradaPage() {
                     <Button
                       type="button"
                       variant="outline"
+                      className="rounded-xl border-slate-200"
                       onClick={() => router.push("/estoque/movimentacoes")}
                       disabled={isSubmitting || isDeleting}
                     >
                       Cancelar
                     </Button>
-                    <Button type="submit" disabled={isSubmitting || isDeleting}>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || isDeleting}
+                      className="rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+                    >
                       {isSubmitting ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />

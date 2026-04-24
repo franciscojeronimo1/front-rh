@@ -25,10 +25,10 @@ import {
   EstoqueRelatoriosHeader,
   EstoqueRelatoriosTabBar,
   ReportStatTiles,
-  TablePaginationFooter,
   UsageExitsTable,
   type RelatorioTab,
 } from "@/components/estoque/relatorios"
+import { TablePaginationFooter } from "@/components/estoque/shared"
 import {
   getLowStock,
   getDailyUsage,
