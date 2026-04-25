@@ -40,6 +40,10 @@ export function useSubscription() {
     fetchSubscription()
   }, [fetchSubscription])
 
+  const refetch = useCallback(() => {
+    return fetchSubscription({ bypassCache: true })
+  }, [fetchSubscription])
+
   const isTrialing =
     subscription?.isTrialing === true || subscription?.status === "TRIAL"
 
@@ -49,6 +53,6 @@ export function useSubscription() {
     isTrialing,
     isLoading,
     error,
-    refetch: () => fetchSubscription({ bypassCache: true }),
+    refetch,
   }
 }
