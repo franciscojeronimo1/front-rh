@@ -87,6 +87,7 @@ function AdministracaoContent() {
     subscription,
     isPremium,
     isTrialing,
+    needsPayment,
     isLoading: isLoadingSubscription,
     refetch: refetchSubscription,
   } = useSubscription()
@@ -307,11 +308,15 @@ function AdministracaoContent() {
      
 
         {/* Card de Assinatura */}
-        <Card className={isPremium ? "border-amber-500/50 bg-amber-500/5" : ""}>
+        <Card
+          className={
+            isPremium || needsPayment ? "border-amber-500/50 bg-amber-500/5" : ""
+          }
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div>
               <CardTitle className="flex items-center gap-2">
-                {isPremium ? (
+                {isPremium || needsPayment ? (
                   <Crown className="w-5 h-5 text-amber-500" />
                 ) : (
                   <Sparkles className="w-5 h-5 text-primary" />
@@ -321,6 +326,8 @@ function AdministracaoContent() {
               <CardDescription>
                 {isLoadingSubscription ? (
                   "Carregando..."
+                ) : needsPayment ? (
+                  "Regularize o pagamento para manter o acesso Premium."
                 ) : isPremium && isTrialing ? (
                   "Teste Premium — acesso completo durante o período de avaliação"
                 ) : isPremium ? (
@@ -334,18 +341,40 @@ function AdministracaoContent() {
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
-                    isPremium
+                    isPremium || needsPayment
                       ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {subscription?.plan === "PREMIUM"
-                    ? isTrialing
-                      ? "Teste Premium"
-                      : "Premium"
+                    ? needsPayment
+                      ? "Premium — pagamento"
+                      : isTrialing
+                        ? "Teste Premium"
+                        : "Premium"
                     : "Gratuito"}
                 </span>
-                {!isPremium && (
+                {needsPayment && (
+                  <Button
+                    variant="default"
+                    className="gap-2"
+                    onClick={handleOpenPortal}
+                    disabled={isPortalLoading}
+                  >
+                    {isPortalLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Redirecionando...
+                      </>
+                    ) : (
+                      <>
+                        <Settings className="h-4 w-4" />
+                        Gerenciar pagamento
+                      </>
+                    )}
+                  </Button>
+                )}
+                {!isPremium && !needsPayment && (
                   <Button
                     variant="default"
                     className="gap-2"
@@ -365,7 +394,7 @@ function AdministracaoContent() {
                     )}
                   </Button>
                 )}
-                {isPremium && (
+                {isPremium && !needsPayment && (
                   <Button
                     variant="outline"
                     className="gap-2"
@@ -409,7 +438,12 @@ function AdministracaoContent() {
               )}
             </CardContent>
           )}
-          {!isLoadingSubscription && !isPremium && (
+          {!isLoadingSubscription && needsPayment && subscription?.message && (
+            <CardContent>
+              <p className="text-sm text-muted-foreground">{subscription.message}</p>
+            </CardContent>
+          )}
+          {!isLoadingSubscription && !isPremium && !needsPayment && (
             <CardContent>
               <p className="text-sm text-muted-foreground">
                 Com o plano Premium você terá acesso a: ponto eletrônico, colaboradores, estoque, categorias, produtos e todas as demais funcionalidades.

@@ -1,13 +1,28 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { checkHealth } from "@/lib/api"
+import {
+  checkHealth,
+  createCheckoutSession,
+  createPortalSession,
+  ApiError,
+} from "@/lib/api"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Building2, Users, Clock, Package, ArrowRight, Crown, AlertCircle } from "lucide-react"
+import {
+  Building2,
+  Users,
+  Clock,
+  Package,
+  ArrowRight,
+  Crown,
+  AlertCircle,
+  Loader2,
+  Settings,
+} from "lucide-react"
 import { useSubscription } from "@/hooks/useSubscription"
 import { formatTrialEndsAt } from "@/lib/subscription-format"
 
@@ -26,11 +41,51 @@ export default function Dashboard() {
     subscription,
     isPremium,
     isTrialing,
+    needsPayment,
     isLoading: isLoadingSubscription,
   } = useSubscription()
 
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false)
+  const [isPortalLoading, setIsPortalLoading] = useState(false)
+  const [billingError, setBillingError] = useState("")
+
+  const handleUpgrade = useCallback(async () => {
+    setBillingError("")
+    try {
+      setIsCheckoutLoading(true)
+      const { url } = await createCheckoutSession()
+      if (url) {
+        window.location.href = url
+      } else {
+        setBillingError("Não foi possível iniciar o checkout. Tente novamente.")
+      }
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) return
+      setBillingError(err instanceof Error ? err.message : "Erro ao iniciar checkout")
+    } finally {
+      setIsCheckoutLoading(false)
+    }
+  }, [])
+
+  const handleOpenPortal = useCallback(async () => {
+    setBillingError("")
+    try {
+      setIsPortalLoading(true)
+      const { url } = await createPortalSession()
+      if (url) {
+        window.location.href = url
+      } else {
+        setBillingError("Não foi possível abrir o portal. Tente novamente.")
+      }
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) return
+      setBillingError(err instanceof Error ? err.message : "Erro ao abrir portal")
+    } finally {
+      setIsPortalLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     // Só executa no cliente - evita mismatch de hidratação
@@ -81,24 +136,80 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Bem-vindo, {user?.name || "Usuário"}!
           </h1>
-          <p className="text-muted-foreground">
-            Sistema de gestão empresarial
-            {!isLoadingSubscription && !isPremium && (
-              <span className="ml-2 text-amber-600 dark:text-amber-400">
-                • Plano gratuito
-              </span>
-            )}
-            {!isLoadingSubscription && isPremium && isTrialing && (
-              <span className="ml-2 text-amber-600 dark:text-amber-400">
-                • Teste Premium
-              </span>
-            )}
-          </p>
-          {!isLoadingSubscription && isPremium && isTrialing && subscription?.trialEndsAt && (
-            <p className="text-sm text-muted-foreground mt-2">
-              Seu Teste Premium termina em {formatTrialEndsAt(subscription.trialEndsAt)}.
-            </p>
+          {billingError && (
+            <Alert variant="destructive" className="mb-3">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{billingError}</AlertDescription>
+            </Alert>
           )}
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-muted-foreground">
+              <span>Sistema de gestão empresarial</span>
+              {!isLoadingSubscription && needsPayment && (
+                <>
+                  <span className="text-amber-600 dark:text-amber-400">• Pagamento pendente</span>
+                  {user?.role === "ADMIN" && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="gap-2"
+                      onClick={handleOpenPortal}
+                      disabled={isPortalLoading}
+                    >
+                      {isPortalLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Redirecionando...
+                        </>
+                      ) : (
+                        <>
+                          <Settings className="h-4 w-4" />
+                          Gerenciar pagamento
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </>
+              )}
+              {!isLoadingSubscription && !isPremium && !needsPayment && (
+                <>
+                  <span className="text-amber-600 dark:text-amber-400">• Plano gratuito</span>
+                  {user?.role === "ADMIN" && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="gap-2"
+                      onClick={handleUpgrade}
+                      disabled={isCheckoutLoading}
+                    >
+                      {isCheckoutLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Redirecionando...
+                        </>
+                      ) : (
+                        <>
+                          <Crown className="h-4 w-4" />
+                          Fazer upgrade
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </>
+              )}
+              {!isLoadingSubscription && isPremium && isTrialing && (
+                <span className="text-amber-600 dark:text-amber-400">• Teste Premium</span>
+              )}
+            </div>
+            {!isLoadingSubscription && needsPayment && subscription?.message && (
+              <p className="text-sm text-muted-foreground max-w-2xl">{subscription.message}</p>
+            )}
+            {!isLoadingSubscription && isPremium && isTrialing && subscription?.trialEndsAt && (
+              <p className="text-sm text-muted-foreground">
+                Seu Teste Premium termina em {formatTrialEndsAt(subscription.trialEndsAt)}.
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

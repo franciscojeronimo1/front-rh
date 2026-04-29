@@ -47,10 +47,13 @@ export function useSubscription() {
   const isTrialing =
     subscription?.isTrialing === true || subscription?.status === "TRIAL"
 
+  const needsPayment = subscription?.needsPayment === true
+
   return {
     subscription,
     isPremium: subscription?.isPremium ?? false,
     isTrialing,
+    needsPayment,
     isLoading,
     error,
     refetch,

@@ -411,8 +411,11 @@ export interface Subscription {
   plan: Plan
   status: SubscriptionStatus
   isPremium: boolean
+  /** true quando plan === PREMIUM e status === EXPIRED (regularizar pagamento no portal). */
+  needsPayment?: boolean
   /** true apenas durante o trial (espelha status TRIAL). */
   isTrialing?: boolean
+  /** Presente quando needsPayment é true: orientação para cadastrar pagamento e manter o Premium. */
   message?: string
   startedAt?: string
   expiresAt?: string
