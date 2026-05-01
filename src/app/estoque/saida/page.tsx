@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -156,7 +157,19 @@ export default function RegistrarSaidaPage() {
       }
 
       await createStockExit(requestData)
-      router.push("/estoque")
+      toast.success("Saída registrada com sucesso.")
+      form.reset({
+        productId: "",
+        quantity: "",
+        unitPrice: "",
+        projectName: "",
+        clientName: "",
+        serviceType: "",
+        notes: "",
+      })
+      setSelectedProduct(null)
+      setShowProjectFields(false)
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao registrar saída")
     } finally {

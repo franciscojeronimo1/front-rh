@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
+import { Toaster } from "sonner"
 import { Sidebar } from "@/components/Sidebar"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
@@ -46,10 +47,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!showSidebar) {
-    return <>{children}</>
+    return (
+      <>
+        <Toaster richColors closeButton position="top-right" />
+        {children}
+      </>
+    )
   }
 
   return (
+    <>
     <div className="flex min-h-screen bg-background">
       {/* Sidebar - desktop */}
       <div className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:z-40">
@@ -101,5 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main className="flex-1">{children}</main>
       </div>
     </div>
+    <Toaster richColors closeButton position="top-right" />
+    </>
   )
 }

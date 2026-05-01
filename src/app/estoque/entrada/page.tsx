@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -106,7 +107,18 @@ export default function RegistrarEntradaPage() {
       }
 
       await createStockEntry(requestData)
-      router.push("/estoque")
+      toast.success("Entrada registrada com sucesso.")
+      form.reset({
+        productId: "",
+        quantity: "",
+        unitPrice: "",
+        supplierName: "",
+        supplierDoc: "",
+        invoiceNumber: "",
+        notes: "",
+      })
+      setShowSupplierFields(false)
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao registrar entrada")
     } finally {
