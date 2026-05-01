@@ -9,9 +9,9 @@ export function formatBrl(value: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 }
 
-export function formatBrlOptional(value: string | null | undefined): string {
+export function formatBrlOptional(value: string | number | null | undefined): string {
   if (value == null || value === "") return "-"
-  const n = parseFloat(value)
+  const n = typeof value === "number" ? value : parseFloat(value)
   if (Number.isNaN(n)) return "-"
   return formatBrl(n)
 }
@@ -62,6 +62,8 @@ export type UsageExitRow = {
   productName: string
   quantity: number
   unit: string
+  costPrice: number | null | undefined
+  averageCost: number | null | undefined
   unitPrice: string | null | undefined
   totalPrice: string | null | undefined
   clientName: string | null | undefined
@@ -72,7 +74,12 @@ export type UsageExitRow = {
 
 export function buildUsageExitRows(
   products: Array<{
-    product: { name: string; unit: string }
+    product: {
+      name: string
+      unit: string
+      costPrice?: number | null
+      averageCost?: number | null
+    }
     exits: DailyUsageExit[] | undefined
   }>
 ): UsageExitRow[] {
@@ -82,6 +89,8 @@ export function buildUsageExitRows(
       productName: productItem.product.name,
       quantity: exit.quantity,
       unit: productItem.product.unit,
+      costPrice: productItem.product.costPrice,
+      averageCost: productItem.product.averageCost,
       unitPrice: exit.unitPrice,
       totalPrice: exit.totalPrice,
       clientName: exit.clientName,

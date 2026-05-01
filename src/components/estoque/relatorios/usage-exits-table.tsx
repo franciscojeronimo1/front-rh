@@ -23,6 +23,8 @@ export function UsageExitsTable({ rows }: UsageExitsTableProps) {
             <TableHead>Produto</TableHead>
             <TableHead>Quantidade</TableHead>
             <TableHead>Unidade</TableHead>
+            <TableHead>Preço de custo</TableHead>
+            <TableHead>Custo médio</TableHead>
             <TableHead>Preço unit.</TableHead>
             <TableHead>Valor total</TableHead>
             <TableHead>Cliente</TableHead>
@@ -37,6 +39,8 @@ export function UsageExitsTable({ rows }: UsageExitsTableProps) {
               <TableCell className="font-medium">{row.productName}</TableCell>
               <TableCell>{row.quantity}</TableCell>
               <TableCell>{row.unit}</TableCell>
+              <TableCell>{formatBrlOptional(row.costPrice)}</TableCell>
+              <TableCell>{formatBrlOptional(row.averageCost)}</TableCell>
               <TableCell>{formatBrlOptional(row.unitPrice)}</TableCell>
               <TableCell>{formatBrlOptional(row.totalPrice)}</TableCell>
               <TableCell>{row.clientName || "-"}</TableCell>

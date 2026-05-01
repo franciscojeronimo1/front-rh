@@ -971,6 +971,8 @@ export interface DailyUsageProduct {
     id: string
     name: string
     unit: string
+    costPrice?: number | null
+    averageCost?: number | null
   }
   totalQuantity: number
   exits: DailyUsageExit[]
@@ -987,6 +989,8 @@ export interface WeeklyUsageProduct {
     id: string
     name: string
     unit: string
+    costPrice?: number | null
+    averageCost?: number | null
   }
   totalQuantity: number
   exits: DailyUsageExit[]

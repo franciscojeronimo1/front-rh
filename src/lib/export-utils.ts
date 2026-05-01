@@ -67,12 +67,21 @@ export function buildLowStockRows(data: LowStockResponse): ExportRow[] {
   }))
 }
 
+function exportMoneyOptional(value: number | string | null | undefined): string {
+  if (value == null || value === "") return "-"
+  const n = typeof value === "number" ? value : parseFloat(String(value))
+  if (Number.isNaN(n)) return "-"
+  return n.toFixed(2)
+}
+
 export function buildDailyUsageRows(data: DailyUsageResponse): ExportRow[] {
   return data.products.flatMap((p) =>
     p.exits.map((e) => ({
       Produto: p.product.name,
       Quantidade: e.quantity,
       Unidade: p.product.unit,
+      "Preço de custo": exportMoneyOptional(p.product.costPrice),
+      "Custo médio": exportMoneyOptional(p.product.averageCost),
       "Preço Unit.": e.unitPrice ? parseFloat(e.unitPrice).toFixed(2) : "-",
       "Valor Total": e.totalPrice ? parseFloat(e.totalPrice).toFixed(2) : "-",
       Cliente: e.clientName || "-",
@@ -89,6 +98,8 @@ export function buildWeeklyUsageRows(data: WeeklyUsageResponse): ExportRow[] {
       Produto: p.product.name,
       Quantidade: e.quantity,
       Unidade: p.product.unit,
+      "Preço de custo": exportMoneyOptional(p.product.costPrice),
+      "Custo médio": exportMoneyOptional(p.product.averageCost),
       "Preço Unit.": e.unitPrice ? parseFloat(e.unitPrice).toFixed(2) : "-",
       "Valor Total": e.totalPrice ? parseFloat(e.totalPrice).toFixed(2) : "-",
       Cliente: e.clientName || "-",
