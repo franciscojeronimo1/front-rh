@@ -27,7 +27,12 @@ import { ProductCombobox } from "@/components/product-combobox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { estoqueFormLayout, estoqueRelatoriosLayout } from "@/lib/estoque/dashboard-tokens"
-import { EstoqueSubpageHeader } from "@/components/estoque"
+import type { StockMovementMode } from "@/lib/estoque/batch-movement-utils"
+import {
+  EntradaBatchForm,
+  EstoqueSubpageHeader,
+  StockMovementModeToggle,
+} from "@/components/estoque"
 
 const entrySchema = z.object({
   productId: z.string().min(1, "Produto é obrigatório"),
@@ -49,6 +54,7 @@ type EntryFormValues = z.infer<typeof entrySchema>
 
 export default function RegistrarEntradaPage() {
   const router = useRouter()
+  const [mode, setMode] = useState<StockMovementMode>("single")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [totalPrice, setTotalPrice] = useState(0)
@@ -126,15 +132,32 @@ export default function RegistrarEntradaPage() {
     }
   }
 
+  const isBatch = mode === "batch"
+
   return (
     <div className={estoqueFormLayout.page}>
-      <div className={estoqueFormLayout.narrow}>
+      <div className={isBatch ? estoqueFormLayout.wide : estoqueFormLayout.narrow}>
         <EstoqueSubpageHeader
           title="Registrar entrada"
-          subtitle="Registre uma compra ou recebimento de material"
+          subtitle={
+            isBatch
+              ? "Registre vários produtos em uma única compra ou recebimento"
+              : "Registre uma compra ou recebimento de material"
+          }
           onBack={() => router.push("/estoque")}
         />
 
+        <StockMovementModeToggle
+          value={mode}
+          onChange={setMode}
+          variant="entry"
+          disabled={isSubmitting}
+        />
+
+        {isBatch ? (
+          <EntradaBatchForm />
+        ) : (
+          <>
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -361,8 +384,11 @@ export default function RegistrarEntradaPage() {
             </Form>
           </CardContent>
         </Card>
+          </>
+        )}
       </div>
     </div>
   )
 }
+
 

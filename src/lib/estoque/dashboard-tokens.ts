@@ -55,5 +55,6 @@ export const estoqueRelatoriosLayout = {
 export const estoqueFormLayout = {
   page: estoqueRelatoriosLayout.page,
   narrow: "mx-auto w-full max-w-3xl space-y-6",
+  wide: "mx-auto w-full max-w-5xl space-y-6",
   loadingCenter: "flex min-h-[50vh] items-center justify-center",
 } as const

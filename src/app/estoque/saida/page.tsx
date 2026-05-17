@@ -29,7 +29,12 @@ import { ProductCombobox } from "@/components/product-combobox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { estoqueFormLayout, estoqueRelatoriosLayout } from "@/lib/estoque/dashboard-tokens"
-import { EstoqueSubpageHeader } from "@/components/estoque"
+import type { StockMovementMode } from "@/lib/estoque/batch-movement-utils"
+import {
+  EstoqueSubpageHeader,
+  SaidaBatchForm,
+  StockMovementModeToggle,
+} from "@/components/estoque"
 
 const baseExitSchema = z.object({
   productId: z.string().min(1, "Produto é obrigatório"),
@@ -57,6 +62,7 @@ type ExitFormValues = z.infer<typeof baseExitSchema>
 
 export default function RegistrarSaidaPage() {
   const router = useRouter()
+  const [mode, setMode] = useState<StockMovementMode>("single")
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
@@ -177,15 +183,32 @@ export default function RegistrarSaidaPage() {
     }
   }
 
+  const isBatch = mode === "batch"
+
   return (
     <div className={estoqueFormLayout.page}>
-      <div className={estoqueFormLayout.narrow}>
+      <div className={isBatch ? estoqueFormLayout.wide : estoqueFormLayout.narrow}>
         <EstoqueSubpageHeader
           title="Registrar saída"
-          subtitle="Registre o uso ou consumo de material"
+          subtitle={
+            isBatch
+              ? "Registre o consumo de vários produtos de uma vez"
+              : "Registre o uso ou consumo de material"
+          }
           onBack={() => router.push("/estoque")}
         />
 
+        <StockMovementModeToggle
+          value={mode}
+          onChange={setMode}
+          variant="exit"
+          disabled={isSubmitting}
+        />
+
+        {isBatch ? (
+          <SaidaBatchForm />
+        ) : (
+          <>
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -417,6 +440,8 @@ export default function RegistrarSaidaPage() {
             </Form>
           </CardContent>
         </Card>
+          </>
+        )}
       </div>
     </div>
   )

@@ -772,6 +772,35 @@ export async function createStockEntry(data: CreateStockEntryRequest): Promise<C
   return response.json()
 }
 
+export interface StockEntryBatchItem {
+  productId: string
+  quantity: number
+  unitPrice: number
+}
+
+export interface CreateStockEntryBatchRequest {
+  supplierName?: string
+  supplierDoc?: string
+  invoiceNumber?: string
+  notes?: string
+  items: StockEntryBatchItem[]
+}
+
+export interface CreateStockEntryBatchResponse {
+  message: string
+  entries: StockEntry[]
+}
+
+export async function createStockEntryBatch(
+  data: CreateStockEntryBatchRequest
+): Promise<CreateStockEntryBatchResponse> {
+  const response = await authenticatedFetch("/stock/entries/batch", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+  return response.json()
+}
+
 
 export async function getStockEntries(
   productId?: string,
@@ -864,6 +893,35 @@ export interface StockExitsResponse {
 
 export async function createStockExit(data: CreateStockExitRequest): Promise<CreateStockExitResponse> {
   const response = await authenticatedFetch("/stock/exits", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+  return response.json()
+}
+
+export interface StockExitBatchItem {
+  productId: string
+  quantity: number
+  unitPrice?: number
+}
+
+export interface CreateStockExitBatchRequest {
+  projectName?: string
+  clientName?: string
+  serviceType?: string
+  notes?: string
+  items: StockExitBatchItem[]
+}
+
+export interface CreateStockExitBatchResponse {
+  message: string
+  exits: StockExit[]
+}
+
+export async function createStockExitBatch(
+  data: CreateStockExitBatchRequest
+): Promise<CreateStockExitBatchResponse> {
+  const response = await authenticatedFetch("/stock/exits/batch", {
     method: "POST",
     body: JSON.stringify(data),
   })

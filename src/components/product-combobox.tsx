@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { Input } from "@/components/ui/input"
 import { getProducts, getProductById, type Product } from "@/lib/api"
 import { cn } from "@/lib/utils"
@@ -9,6 +10,8 @@ import { Button } from "@/components/ui/button"
 
 const DEBOUNCE_MS = 350
 const SEARCH_LIMIT = 15
+const DROPDOWN_MAX_HEIGHT = 240
+const VIEWPORT_PADDING = 8
 
 interface ProductComboboxProps {
   value: string
@@ -17,10 +20,17 @@ interface ProductComboboxProps {
   placeholder?: string
   disabled?: boolean
   className?: string
-  /** Exibir estoque nos itens (para página de saída) */
   showStock?: boolean
-  /** Filtrar apenas produtos com estoque > 0 (para página de saída) */
   onlyWithStock?: boolean
+  excludeProductIds?: string[]
+}
+
+type DropdownPosition = {
+  top?: number
+  bottom?: number
+  left: number
+  width: number
+  maxHeight: number
 }
 
 function formatProductLabel(product: Product, showStock?: boolean) {
@@ -29,6 +39,33 @@ function formatProductLabel(product: Product, showStock?: boolean) {
     return `${base} - Estoque: ${product.currentStock} ${product.unit}`
   }
   return base
+}
+
+function computeDropdownPosition(anchor: HTMLElement): DropdownPosition {
+  const rect = anchor.getBoundingClientRect()
+  const spaceBelow = window.innerHeight - rect.bottom - VIEWPORT_PADDING
+  const spaceAbove = rect.top - VIEWPORT_PADDING
+  const openUpward = spaceBelow < 180 && spaceAbove > spaceBelow
+  const maxHeight = Math.min(
+    DROPDOWN_MAX_HEIGHT,
+    Math.max(120, openUpward ? spaceAbove - 4 : spaceBelow - 4)
+  )
+
+  if (openUpward) {
+    return {
+      bottom: window.innerHeight - rect.top + 4,
+      left: rect.left,
+      width: rect.width,
+      maxHeight,
+    }
+  }
+
+  return {
+    top: rect.bottom + 4,
+    left: rect.left,
+    width: rect.width,
+    maxHeight,
+  }
 }
 
 export function ProductCombobox({
@@ -40,6 +77,7 @@ export function ProductCombobox({
   className,
   showStock = false,
   onlyWithStock = false,
+  excludeProductIds = [],
 }: ProductComboboxProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [isOpen, setIsOpen] = useState(false)
@@ -47,7 +85,10 @@ export function ProductCombobox({
   const [products, setProducts] = useState<Product[]>([])
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isLoadingSelected, setIsLoadingSelected] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null)
+  const [mounted, setMounted] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const listboxRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const fetchProducts = useCallback(
@@ -63,6 +104,10 @@ export function ProductCombobox({
         if (onlyWithStock) {
           list = list.filter((p) => p.currentStock > 0)
         }
+        if (excludeProductIds.length > 0) {
+          const excluded = new Set(excludeProductIds)
+          list = list.filter((p) => p.id === value || !excluded.has(p.id))
+        }
         setProducts(list)
       } catch {
         setProducts([])
@@ -70,8 +115,17 @@ export function ProductCombobox({
         setIsLoading(false)
       }
     },
-    [onlyWithStock]
+    [onlyWithStock, excludeProductIds, value]
   )
+
+  const updateDropdownPosition = useCallback(() => {
+    if (!inputRef.current) return
+    setDropdownPosition(computeDropdownPosition(inputRef.current))
+  }, [])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (!isOpen) return
@@ -82,6 +136,12 @@ export function ProductCombobox({
 
     return () => clearTimeout(timer)
   }, [searchTerm, isOpen, fetchProducts])
+
+  useEffect(() => {
+    if (excludeProductIds.length === 0) return
+    const excluded = new Set(excludeProductIds)
+    setProducts((prev) => prev.filter((p) => p.id === value || !excluded.has(p.id)))
+  }, [excludeProductIds, value])
 
   useEffect(() => {
     if (value && !selectedProduct) {
@@ -103,10 +163,29 @@ export function ProductCombobox({
   }, [value])
 
   useEffect(() => {
+    if (!isOpen) {
+      setDropdownPosition(null)
+      return
+    }
+
+    updateDropdownPosition()
+
+    const handleReposition = () => updateDropdownPosition()
+    window.addEventListener("resize", handleReposition)
+    window.addEventListener("scroll", handleReposition, true)
+
+    return () => {
+      window.removeEventListener("resize", handleReposition)
+      window.removeEventListener("scroll", handleReposition, true)
+    }
+  }, [isOpen, updateDropdownPosition, products.length, isLoading])
+
+  useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false)
-      }
+      const target = e.target as Node
+      if (containerRef.current?.contains(target)) return
+      if (listboxRef.current?.contains(target)) return
+      setIsOpen(false)
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
@@ -133,6 +212,7 @@ export function ProductCombobox({
 
   const handleInputFocus = () => {
     setIsOpen(true)
+    updateDropdownPosition()
     if (!searchTerm && !value) {
       fetchProducts("")
     }
@@ -147,10 +227,68 @@ export function ProductCombobox({
       onProductSelect?.(null)
     }
     setIsOpen(true)
+    updateDropdownPosition()
   }
 
   const selectedLabel = selectedProduct ? formatProductLabel(selectedProduct, showStock) : ""
   const displayValue = isOpen ? (searchTerm || selectedLabel) : selectedLabel
+
+  const dropdownContent =
+    isOpen && dropdownPosition ? (
+      <div
+        ref={listboxRef}
+        role="listbox"
+        style={{
+          position: "fixed",
+          top: dropdownPosition.top,
+          bottom: dropdownPosition.bottom,
+          left: dropdownPosition.left,
+          width: dropdownPosition.width,
+          maxHeight: dropdownPosition.maxHeight,
+        }}
+        className="z-[200] overflow-auto rounded-md border bg-popover text-popover-foreground shadow-lg"
+      >
+        {isLoading ? (
+          <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Buscando...
+          </div>
+        ) : products.length === 0 ? (
+          <div className="py-6 text-center text-sm text-muted-foreground px-2">
+            {searchTerm
+              ? excludeProductIds.length > 0
+                ? "Nenhum produto disponível (já selecionado em outra linha ou não encontrado)"
+                : "Nenhum produto encontrado"
+              : excludeProductIds.length > 0
+                ? "Produtos restantes já estão em outras linhas — digite para buscar outros"
+                : "Digite para buscar"}
+          </div>
+        ) : (
+          <ul className="p-1">
+            {products.map((product) => (
+              <li
+                key={product.id}
+                role="option"
+                tabIndex={0}
+                className="cursor-pointer rounded-sm px-2 py-2 text-sm whitespace-normal break-words outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  handleSelect(product)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    handleSelect(product)
+                  }
+                }}
+              >
+                {formatProductLabel(product, showStock)}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    ) : null
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
@@ -191,46 +329,7 @@ export function ProductCombobox({
         </div>
       </div>
 
-      {isOpen && (
-        <div
-          role="listbox"
-          className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md max-h-60 overflow-auto"
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Buscando...
-            </div>
-          ) : products.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              {searchTerm ? "Nenhum produto encontrado" : "Digite para buscar"}
-            </div>
-          ) : (
-            <ul className="p-1">
-              {products.map((product) => (
-                <li
-                  key={product.id}
-                  role="option"
-                  tabIndex={0}
-                  className="cursor-pointer rounded-sm px-2 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    handleSelect(product)
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault()
-                      handleSelect(product)
-                    }
-                  }}
-                >
-                  {formatProductLabel(product, showStock)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+      {mounted && dropdownContent ? createPortal(dropdownContent, document.body) : null}
     </div>
   )
 }

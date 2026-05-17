@@ -1,1 +1,7 @@
 export { MovementTypeBadge } from "./movement-type-badge"
+export { StockMovementModeToggle } from "./stock-movement-mode-toggle"
+export type { StockMovementModeToggleProps } from "./stock-movement-mode-toggle"
+export { StockBatchItemsEditor } from "./stock-batch-items-editor"
+export type { StockBatchItemsEditorProps } from "./stock-batch-items-editor"
+export { EntradaBatchForm } from "./entrada-batch-form"
+export { SaidaBatchForm } from "./saida-batch-form"
