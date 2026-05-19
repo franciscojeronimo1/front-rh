@@ -1,10 +1,10 @@
 "use client"
 
-import { AlertTriangle, Calendar, DollarSign, Package, TrendingUp } from "lucide-react"
+import { AlertTriangle, Calendar, CalendarClock, DollarSign, Package, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { estoqueRelatoriosLayout } from "@/lib/estoque/dashboard-tokens"
 
-export type RelatorioTab = "low" | "daily" | "weekly" | "current" | "value"
+export type RelatorioTab = "low" | "expiring" | "daily" | "weekly" | "current" | "value"
 
 export type EstoqueRelatoriosTabBarProps = {
   activeTab: RelatorioTab
@@ -26,6 +26,14 @@ export function EstoqueRelatoriosTabBar({ activeTab, onTabChange }: EstoqueRelat
       >
         <AlertTriangle className="h-4 w-4 shrink-0" />
         <span className="text-sm font-medium">Estoque baixo</span>
+      </Button>
+      <Button
+        variant="ghost"
+        className={`flex h-auto min-h-11 items-center justify-center gap-2 py-2.5 ${tabClass("expiring")}`}
+        onClick={() => onTabChange("expiring")}
+      >
+        <CalendarClock className="h-4 w-4 shrink-0" />
+        <span className="text-sm font-medium">Validade</span>
       </Button>
       <Button
         variant="ghost"

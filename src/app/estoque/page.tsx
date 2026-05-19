@@ -18,6 +18,7 @@ import {
   EstoqueDashboardHeader,
   EstoqueDashboardSkeleton,
   LowStockAlert,
+  ExpiringProductsAlert,
   RecentMovementsList,
 } from "@/components/estoque"
 
@@ -29,6 +30,8 @@ export default function EstoquePage() {
     totalValue,
     lowStock,
     lowStockCount,
+    expiringStock,
+    expiringWindowDays,
     currentStockCount,
     dailyUsageTotal,
     recentMovements,
@@ -133,7 +136,15 @@ export default function EstoquePage() {
           <RecentMovementsList movements={recentMovements} />
         </div>
 
-        {lowStock && lowStock.products.length > 0 && <LowStockAlert data={lowStock} />}
+        <div className="space-y-6">
+          {lowStock && lowStock.products.length > 0 && <LowStockAlert data={lowStock} />}
+          {expiringStock && expiringStock.products.length > 0 && (
+            <ExpiringProductsAlert
+              data={expiringStock}
+              windowDays={expiringWindowDays}
+            />
+          )}
+        </div>
       </div>
     </div>
   )

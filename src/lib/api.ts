@@ -1007,6 +1007,33 @@ export interface GetLowStockParams {
   limit?: number
 }
 
+export interface ExpiringProduct {
+  id: string
+  name: string
+  code?: string | null
+  sku?: string | null
+  category?: string | null
+  currentStock: number
+  minStock: number
+  unit: string
+  expirationDate: string
+  daysUntilExpiration: number
+  isExpired: boolean
+}
+
+export interface ExpiringStockResponse {
+  products: ExpiringProduct[]
+  pagination: PaginationInfo
+}
+
+export interface GetExpiringStockParams {
+  days?: number
+  includeExpired?: boolean
+  onlyWithStock?: boolean
+  page?: number
+  limit?: number
+}
+
 export interface DailyUsageExit {
   id: string
   quantity: number
@@ -1093,6 +1120,20 @@ export async function getLowStock(
   if (params?.limit !== undefined) searchParams.append("limit", params.limit.toString())
   const queryString = searchParams.toString() ? `?${searchParams.toString()}` : ""
   const response = await authenticatedFetch(`/stock/low-stock${queryString}`)
+  return response.json()
+}
+
+export async function getExpiringStock(
+  params?: GetExpiringStockParams
+): Promise<ExpiringStockResponse> {
+  const searchParams = new URLSearchParams()
+  if (params?.days !== undefined) searchParams.append("days", params.days.toString())
+  if (params?.includeExpired === false) searchParams.append("includeExpired", "false")
+  if (params?.onlyWithStock === true) searchParams.append("onlyWithStock", "true")
+  if (params?.page !== undefined) searchParams.append("page", params.page.toString())
+  if (params?.limit !== undefined) searchParams.append("limit", params.limit.toString())
+  const queryString = searchParams.toString() ? `?${searchParams.toString()}` : ""
+  const response = await authenticatedFetch(`/stock/expiring${queryString}`)
   return response.json()
 }
 export async function getDailyUsage(date?: string): Promise<DailyUsageResponse> {

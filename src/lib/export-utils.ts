@@ -1,6 +1,12 @@
 import * as XLSX from "xlsx"
+import {
+  formatExpirationSituationFromIso,
+  formatProductExpirationBr,
+  getExpirationCalendarMetrics,
+} from "@/lib/product-expiration"
 import type {
   LowStockResponse,
+  ExpiringStockResponse,
   DailyUsageResponse,
   WeeklyUsageResponse,
   CurrentStockResponse,
@@ -65,6 +71,22 @@ export function buildLowStockRows(data: LowStockResponse): ExportRow[] {
     Unidade: p.unit,
     Déficit: -(p.deficit ?? p.minStock - p.currentStock),
   }))
+}
+
+export function buildExpiringStockRows(data: ExpiringStockResponse): ExportRow[] {
+  return data.products.map((p) => {
+    const metrics = getExpirationCalendarMetrics(p.expirationDate)
+    return {
+      Produto: p.name,
+      Categoria: p.category || "-",
+      Validade: formatProductExpirationBr(p.expirationDate),
+      Situação: formatExpirationSituationFromIso(p.expirationDate),
+      "Dias até validade": metrics?.daysUntilExpiration ?? p.daysUntilExpiration,
+      Vencido: (metrics?.isExpired ?? p.isExpired) ? "Sim" : "Não",
+      "Estoque Atual": p.currentStock,
+      Unidade: p.unit,
+    }
+  })
 }
 
 function exportMoneyOptional(value: number | string | null | undefined): string {

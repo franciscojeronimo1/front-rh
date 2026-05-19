@@ -5,12 +5,16 @@ import { format } from "date-fns"
 import {
   getTotalValue,
   getLowStock,
+  getExpiringStock,
   getCurrentStock,
   getStockMovements,
   type TotalValueResponse,
   type LowStockResponse,
+  type ExpiringStockResponse,
   type StockMovement,
 } from "@/lib/api"
+
+const EXPIRING_ALERT_DAYS = 30
 import {
   aggregateMovementBuckets,
   fetchMovementsInRange,
@@ -31,6 +35,7 @@ export function useEstoqueDashboard() {
   const [totalValue, setTotalValue] = useState<TotalValueResponse | null>(null)
   const [lowStock, setLowStock] = useState<LowStockResponse | null>(null)
   const [lowStockCount, setLowStockCount] = useState(0)
+  const [expiringStock, setExpiringStock] = useState<ExpiringStockResponse | null>(null)
   const [currentStockCount, setCurrentStockCount] = useState(0)
   const [dailyUsageTotal, setDailyUsageTotal] = useState(0)
   const [recentMovements, setRecentMovements] = useState<StockMovement[]>([])
@@ -53,10 +58,11 @@ export function useEstoqueDashboard() {
       const from14 = format(dayList14[0], "yyyy-MM-dd")
       const to = format(new Date(), "yyyy-MM-dd")
 
-      const [totalValueData, lowStockData, currentStockData, recentRes, movements14] =
+      const [totalValueData, lowStockData, expiringData, currentStockData, recentRes, movements14] =
         await Promise.all([
           getTotalValue(),
           getLowStock(),
+          getExpiringStock({ days: EXPIRING_ALERT_DAYS, limit: 5 }),
           getCurrentStock(),
           getStockMovements({ page: 1, limit: 12 }),
           fetchMovementsInRange(from14, to),
@@ -65,6 +71,7 @@ export function useEstoqueDashboard() {
       setTotalValue(totalValueData)
       setLowStock(lowStockData)
       setLowStockCount(lowStockData.pagination?.total ?? lowStockData.products.length)
+      setExpiringStock(expiringData)
       setCurrentStockCount(currentStockData.pagination?.total ?? currentStockData.products.length)
       setRecentMovements(recentRes.movements)
 
@@ -104,6 +111,8 @@ export function useEstoqueDashboard() {
     totalValue,
     lowStock,
     lowStockCount,
+    expiringStock,
+    expiringWindowDays: EXPIRING_ALERT_DAYS,
     currentStockCount,
     dailyUsageTotal,
     recentMovements,

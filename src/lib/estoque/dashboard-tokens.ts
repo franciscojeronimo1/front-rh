@@ -48,7 +48,7 @@ export const estoqueRelatoriosLayout = {
   /** Blocos maiores (ex.: valor total do relatório). */
   statBlock: "rounded-xl border border-slate-100 bg-white p-6 shadow-sm",
   statBlockPrimary: "rounded-xl border border-blue-100 bg-blue-50/90 p-6 shadow-sm",
-  tabGrid: "grid grid-cols-2 gap-3 md:grid-cols-5",
+  tabGrid: "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6",
 } as const
 
 /** Formulários estreitos (entrada / saída / edição). */
