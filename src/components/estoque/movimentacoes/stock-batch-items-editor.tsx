@@ -85,7 +85,7 @@ export function StockBatchItemsEditor({
               <TableHead className="w-[100px]">Qtd.</TableHead>
               <TableHead className="w-[120px]">
                 {isExit ? "Preço venda" : "Preço unit."}
-                {isExit && <span className="block text-xs font-normal text-muted-foreground">opcional</span>}
+                
               </TableHead>
               <TableHead className="w-[100px] text-right">Subtotal</TableHead>
               <TableHead className="w-[48px]" />
@@ -140,7 +140,7 @@ export function StockBatchItemsEditor({
                       type="number"
                       step="0.01"
                       min="0"
-                      placeholder={isExit ? "Automático" : "0,00"}
+                      placeholder={"0,00"}
                       value={item.unitPrice}
                       disabled={disabled}
                       onChange={(e) => updateItem(item.id, { unitPrice: e.target.value })}

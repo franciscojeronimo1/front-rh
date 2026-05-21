@@ -12,6 +12,7 @@ const DEBOUNCE_MS = 350
 const SEARCH_LIMIT = 15
 const DROPDOWN_MAX_HEIGHT = 240
 const VIEWPORT_PADDING = 8
+const EMPTY_EXCLUDE_IDS: string[] = []
 
 interface ProductComboboxProps {
   value: string
@@ -77,8 +78,11 @@ export function ProductCombobox({
   className,
   showStock = false,
   onlyWithStock = false,
-  excludeProductIds = [],
+  excludeProductIds,
 }: ProductComboboxProps) {
+  const excludedIds = excludeProductIds ?? EMPTY_EXCLUDE_IDS
+  const excludeKey = excludedIds.join(",")
+
   const [searchTerm, setSearchTerm] = useState("")
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -104,8 +108,8 @@ export function ProductCombobox({
         if (onlyWithStock) {
           list = list.filter((p) => p.currentStock > 0)
         }
-        if (excludeProductIds.length > 0) {
-          const excluded = new Set(excludeProductIds)
+        if (excludedIds.length > 0) {
+          const excluded = new Set(excludedIds)
           list = list.filter((p) => p.id === value || !excluded.has(p.id))
         }
         setProducts(list)
@@ -115,7 +119,7 @@ export function ProductCombobox({
         setIsLoading(false)
       }
     },
-    [onlyWithStock, excludeProductIds, value]
+    [onlyWithStock, excludeKey, value]
   )
 
   const updateDropdownPosition = useCallback(() => {
@@ -130,18 +134,19 @@ export function ProductCombobox({
   useEffect(() => {
     if (!isOpen) return
 
+    const delay = searchTerm ? DEBOUNCE_MS : 0
     const timer = setTimeout(() => {
       fetchProducts(searchTerm)
-    }, DEBOUNCE_MS)
+    }, delay)
 
     return () => clearTimeout(timer)
   }, [searchTerm, isOpen, fetchProducts])
 
   useEffect(() => {
-    if (excludeProductIds.length === 0) return
-    const excluded = new Set(excludeProductIds)
+    if (excludedIds.length === 0) return
+    const excluded = new Set(excludedIds)
     setProducts((prev) => prev.filter((p) => p.id === value || !excluded.has(p.id)))
-  }, [excludeProductIds, value])
+  }, [excludeKey, value])
 
   useEffect(() => {
     if (value && !selectedProduct) {
@@ -156,11 +161,11 @@ export function ProductCombobox({
           onProductSelect?.(null)
         })
         .finally(() => setIsLoadingSelected(false))
-    } else if (!value) {
+    } else if (!value && selectedProduct) {
       setSelectedProduct(null)
       onProductSelect?.(null)
     }
-  }, [value])
+  }, [value, selectedProduct])
 
   useEffect(() => {
     if (!isOpen) {
@@ -178,7 +183,7 @@ export function ProductCombobox({
       window.removeEventListener("resize", handleReposition)
       window.removeEventListener("scroll", handleReposition, true)
     }
-  }, [isOpen, updateDropdownPosition, products.length, isLoading])
+  }, [isOpen, updateDropdownPosition])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -213,9 +218,6 @@ export function ProductCombobox({
   const handleInputFocus = () => {
     setIsOpen(true)
     updateDropdownPosition()
-    if (!searchTerm && !value) {
-      fetchProducts("")
-    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -256,10 +258,10 @@ export function ProductCombobox({
         ) : products.length === 0 ? (
           <div className="py-6 text-center text-sm text-muted-foreground px-2">
             {searchTerm
-              ? excludeProductIds.length > 0
+              ? excludedIds.length > 0
                 ? "Nenhum produto disponível (já selecionado em outra linha ou não encontrado)"
                 : "Nenhum produto encontrado"
-              : excludeProductIds.length > 0
+              : excludedIds.length > 0
                 ? "Produtos restantes já estão em outras linhas — digite para buscar outros"
                 : "Digite para buscar"}
           </div>
