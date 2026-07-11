@@ -8,6 +8,7 @@ const PROTECTED_PATHS = [
   "/dashboard",
   "/ponto",
   "/colaboradores",
+  "/clientes",
   "/estoque",
   "/administracao",
 ]

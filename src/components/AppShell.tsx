@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed"
 
-const ROUTES_WITH_SIDEBAR = ["/dashboard", "/ponto", "/colaboradores", "/estoque", "/administracao"]
+const ROUTES_WITH_SIDEBAR = ["/dashboard", "/ponto", "/colaboradores", "/clientes", "/estoque", "/administracao"]
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()

@@ -1,4 +1,4 @@
-import type { Subscription } from "./api"
+import type { Subscription } from "./api/subscription"
 
 /** Evita rajadas sequenciais de GET /subscription ao navegar (rate limit no backend). */
 const TTL_MS = 60_000
@@ -10,7 +10,7 @@ let generation = 0
 
 const inflightClears: Array<() => void> = []
 
-/** Registrado por `api.ts` para anular dedupe em voo ao trocar sessão. */
+/** Registrado por `api/subscription` para anular dedupe em voo ao trocar sessão. */
 export function registerSubscriptionInflightClear(fn: () => void): void {
   inflightClears.push(fn)
 }

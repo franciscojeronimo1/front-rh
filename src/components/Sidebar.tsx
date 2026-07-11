@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Clock,
   Users,
+  UserRound,
   Package,
   Building2,
   LogOut,
@@ -43,6 +44,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/ponto", label: "Bater Ponto", icon: Clock, premium: true },
   { href: "/colaboradores", label: "Colaboradores", icon: Users, admin: true, premium: true },
+  { href: "/clientes", label: "Clientes", icon: UserRound },
   {
     href: "/estoque",
     label: "Estoque",
@@ -76,7 +78,7 @@ function NavLink({
   collapsed?: boolean
 }) {
   const pathname = usePathname()
-  const isActive = pathname === href
+  const isActive = pathname === href || pathname.startsWith(`${href}/`)
 
   if (disabled) {
     return (
@@ -116,6 +118,8 @@ function NavLink({
   )
 }
 
+type NavItemWithChildrenType = Extract<(typeof navItems)[number], { children: readonly unknown[] }>
+
 function NavItemWithChildren({
   item,
   isPremium,
@@ -123,7 +127,7 @@ function NavItemWithChildren({
   collapsed,
   onClose,
 }: {
-  item: (typeof navItems)[3]
+  item: NavItemWithChildrenType
   isAdmin: boolean
   isPremium: boolean
   pathname: string
