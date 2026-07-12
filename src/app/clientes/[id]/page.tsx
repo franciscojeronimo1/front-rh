@@ -16,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { ArrowLeft, Loader2, Save } from "lucide-react"
+import { ArrowLeft, FileText, Loader2, Save } from "lucide-react"
 import { getClientById, updateClient, type UpdateClientRequest } from "@/lib/api"
 import {
   clientFormSchema,
@@ -130,19 +130,28 @@ export default function EditarClientePage() {
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-3xl">
-        <div className="mb-8 flex items-center gap-4">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => router.push("/clientes")}
+              className="h-10 w-10"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="mb-2 text-3xl font-bold text-foreground">Editar cliente</h1>
+              <p className="text-muted-foreground">Atualize os dados do cadastro</p>
+            </div>
+          </div>
           <Button
             variant="outline"
-            size="icon"
-            onClick={() => router.push("/clientes")}
-            className="h-10 w-10"
+            onClick={() => router.push(`/clientes/${clientId}/carnes`)}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <FileText className="mr-2 h-4 w-4" />
+            Carnês
           </Button>
-          <div>
-            <h1 className="mb-2 text-3xl font-bold text-foreground">Editar cliente</h1>
-            <p className="text-muted-foreground">Atualize os dados do cadastro</p>
-          </div>
         </div>
 
         {error && (

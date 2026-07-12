@@ -31,6 +31,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit,
+  FileText,
   Loader2,
   MoreHorizontal,
   Search,
@@ -384,6 +385,12 @@ export default function ClientesPage() {
                                 Ver detalhes
                               </DropdownMenuItem>
                               <DropdownMenuItem
+                                onClick={() => router.push(`/clientes/${client.id}/carnes`)}
+                              >
+                                <FileText className="mr-2 h-4 w-4" />
+                                Carnês
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
                                 onClick={() => router.push(`/clientes/${client.id}`)}
                               >
                                 <Edit className="mr-2 h-4 w-4" />
@@ -539,6 +546,16 @@ export default function ClientesPage() {
                 <div className="flex justify-end gap-2 border-t pt-4">
                   <Button variant="outline" onClick={() => setDetailOpen(false)}>
                     Fechar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setDetailOpen(false)
+                      router.push(`/clientes/${detailClient.id}/carnes`)
+                    }}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Carnês
                   </Button>
                   <Button
                     onClick={() => {
