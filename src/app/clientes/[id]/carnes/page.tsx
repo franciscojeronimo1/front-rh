@@ -28,6 +28,7 @@ import {
   type Booklet,
   type Client,
 } from "@/lib/api"
+import { getBookletPaymentSummary } from "@/lib/carne"
 import { ArrowLeft, FileText, Loader2, Plus, Trash2 } from "lucide-react"
 
 function formatMoney(value: string | number): string {
@@ -157,43 +158,54 @@ export default function ClienteCarnesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {booklets.map((booklet) => (
-                      <TableRow key={booklet.id}>
-                        <TableCell className="font-medium">
-                          {booklet.description || "Carnê de pagamento"}
-                        </TableCell>
-                        <TableCell>{booklet.installmentCount}x</TableCell>
-                        <TableCell>
-                          {formatMoney(booklet.installmentAmount)}
-                          <span className="block text-xs text-muted-foreground">
-                            Total {formatMoney(booklet.totalAmount)}
-                          </span>
-                        </TableCell>
-                        <TableCell>{formatDate(booklet.firstDueDate)}</TableCell>
-                        <TableCell>
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                router.push(`/clientes/${clientId}/carnes/${booklet.id}`)
-                              }
-                            >
-                              <FileText className="mr-1 h-3.5 w-3.5" />
-                              Abrir
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive"
-                              onClick={() => setToDelete(booklet)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {booklets.map((booklet) => {
+                      const summary = getBookletPaymentSummary(booklet)
+                      return (
+                        <TableRow key={booklet.id}>
+                          <TableCell className="font-medium">
+                            {booklet.description || "Carnê de pagamento"}
+                          </TableCell>
+                          <TableCell>
+                            {booklet.installmentCount}x
+                            <span className="block text-xs text-muted-foreground">
+                              {summary.paidCount}/{booklet.installmentCount} pagas
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {formatMoney(booklet.installmentAmount)}
+                            <span className="block text-xs text-muted-foreground">
+                              Total {formatMoney(booklet.totalAmount)}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              Pago {formatMoney(summary.paidAmount)}
+                            </span>
+                          </TableCell>
+                          <TableCell>{formatDate(booklet.firstDueDate)}</TableCell>
+                          <TableCell>
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  router.push(`/clientes/${clientId}/carnes/${booklet.id}`)
+                                }
+                              >
+                                <FileText className="mr-1 h-3.5 w-3.5" />
+                                Abrir
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive"
+                                onClick={() => setToDelete(booklet)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>

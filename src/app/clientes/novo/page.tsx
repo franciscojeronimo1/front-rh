@@ -96,7 +96,7 @@ export default function NovoClientePage() {
           <div>
             <h1 className="mb-2 text-3xl font-bold text-foreground">Novo cliente</h1>
             <p className="text-muted-foreground">
-              Cadastre quem vai adquirir a internet
+              Cadastre seu cliente
             </p>
           </div>
         </div>

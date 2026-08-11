@@ -34,6 +34,12 @@ export interface Booklet {
   active: boolean
   createdAt: string
   updatedAt: string
+  paidAmount?: string
+  openAmount?: string
+  paidCount?: number
+  pendingCount?: number
+  cancelledCount?: number
+  nextDueDate?: string | null
   client?: Pick<Client, "id" | "name" | "cpf" | "phone"> & Partial<Client>
   organization?: BookletOrganization
   parcels: BookletParcel[]

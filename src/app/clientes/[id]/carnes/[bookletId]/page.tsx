@@ -29,6 +29,7 @@ import {
   type Booklet,
   type BookletParcelStatus,
 } from "@/lib/api"
+import { getBookletPaymentSummary } from "@/lib/carne"
 import { ArrowLeft, Download, Loader2, Printer } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -150,6 +151,12 @@ export default function CarneDetalhePage() {
     )
   }
 
+  const summary = getBookletPaymentSummary(booklet)
+  const progress =
+    booklet.installmentCount > 0
+      ? Math.min(100, (summary.paidCount / booklet.installmentCount) * 100)
+      : 0
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="mx-auto max-w-4xl space-y-6">
@@ -203,21 +210,63 @@ export default function CarneDetalhePage() {
           <CardHeader>
             <CardTitle>Resumo</CardTitle>
             <CardDescription>
-              Total {formatMoney(booklet.totalAmount)} · 1º vencimento{" "}
-              {formatDate(booklet.firstDueDate)}
+              Acompanhe o recebimento das parcelas deste carnê
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <p className="text-muted-foreground">Cliente</p>
-              <p className="font-medium">{booklet.client?.name ?? "—"}</p>
-            </div>
-            {booklet.notes ? (
-              <div className="sm:col-span-2">
-                <p className="text-muted-foreground">Observações</p>
-                <p>{booklet.notes}</p>
+          <CardContent className="space-y-5">
+            <div className="grid gap-4 text-sm sm:grid-cols-3">
+              <div>
+                <p className="text-muted-foreground">Total</p>
+                <p className="text-lg font-semibold tabular-nums">
+                  {formatMoney(booklet.totalAmount)}
+                </p>
               </div>
-            ) : null}
+              <div>
+                <p className="text-muted-foreground">Já pago</p>
+                <p className="text-lg font-semibold tabular-nums text-success">
+                  {formatMoney(summary.paidAmount)}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Em aberto</p>
+                <p className="text-lg font-semibold tabular-nums">
+                  {formatMoney(summary.openAmount)}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-success transition-[width] duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {summary.paidCount} de {booklet.installmentCount} parcelas pagas
+              </p>
+            </div>
+            <div className="grid gap-3 border-t pt-4 text-sm sm:grid-cols-3">
+              <div>
+                <p className="text-muted-foreground">Cliente</p>
+                <p className="font-medium">{booklet.client?.name ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">1º vencimento</p>
+                <p className="font-medium">{formatDate(booklet.firstDueDate)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Próximo vencimento</p>
+                <p className="font-medium">
+                  {summary.nextDueDate ? formatDate(summary.nextDueDate) : "Quitado"}
+                </p>
+              </div>
+              {booklet.notes ? (
+                <div className="sm:col-span-3">
+                  <p className="text-muted-foreground">Observações</p>
+                  <p>{booklet.notes}</p>
+                </div>
+              ) : null}
+            </div>
           </CardContent>
         </Card>
 

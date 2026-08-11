@@ -196,7 +196,7 @@ export function BookletPdfDocument({ booklet }: { booklet: Booklet }) {
               <Text style={styles.amount}>{formatMoney(parcel.amount)}</Text>
             </View>
             <View style={styles.couponStub}>
-              <Text style={styles.stubTitle}>CANHOTO</Text>
+              <Text style={styles.stubTitle}>CARNÊ DE PAGAMENTO</Text>
               <Text style={styles.couponLine}>Parc. {parcel.number}/{booklet.installmentCount}</Text>
               <Text style={styles.couponLine}>Venc: {formatDate(parcel.dueDate)}</Text>
               <Text style={styles.couponLine}>{formatMoney(parcel.amount)}</Text>
