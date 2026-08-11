@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState, Suspense } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -101,6 +101,22 @@ const tableCellCompact = "px-2 py-1.5 align-middle"
 const tableHeadCompact = "px-2 py-2 h-9 text-xs font-semibold whitespace-nowrap"
 
 export default function ClientesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background p-8">
+          <div className="mx-auto max-w-7xl">
+            <TableSkeleton rows={8} columns={6} />
+          </div>
+        </div>
+      }
+    >
+      <ClientesContent />
+    </Suspense>
+  )
+}
+
+function ClientesContent() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
