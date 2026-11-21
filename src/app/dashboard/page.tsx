@@ -25,6 +25,7 @@ import {
 } from "lucide-react"
 import { useSubscription } from "@/hooks/useSubscription"
 import { formatTrialEndsAt } from "@/lib/subscription-format"
+import { GymModuleCard } from "@/components/academia/gym-module-card"
 
 interface User {
   id: string
@@ -210,6 +211,10 @@ export default function Dashboard() {
               </p>
             )}
           </div>
+        </div>
+
+        <div className="mb-6">
+          <GymModuleCard />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

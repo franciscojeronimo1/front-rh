@@ -7,13 +7,16 @@ import { Sidebar } from "@/components/Sidebar"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { NotificationBell } from "@/components/academia/notification-bell"
+import { useGymModule } from "@/hooks/useGymModule"
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed"
 
-const ROUTES_WITH_SIDEBAR = ["/dashboard", "/ponto", "/colaboradores", "/clientes", "/estoque", "/administracao"]
+const ROUTES_WITH_SIDEBAR = ["/dashboard", "/academia", "/ponto", "/colaboradores", "/clientes", "/estoque", "/administracao"]
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const { enabled: gymEnabled } = useGymModule()
   const [mounted, setMounted] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
@@ -103,7 +106,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </Button>
           <span className="font-semibold">Sistema CGS</span>
+          {gymEnabled && <NotificationBell className="ml-auto" />}
         </header>
+
+        {/* Desktop: barra superior com avisos da academia */}
+        {gymEnabled && (
+          <div className="sticky top-0 z-30 hidden h-14 items-center justify-end gap-2 border-b bg-background/80 px-6 backdrop-blur lg:flex">
+            <NotificationBell />
+          </div>
+        )}
 
         <main className="flex-1">{children}</main>
       </div>

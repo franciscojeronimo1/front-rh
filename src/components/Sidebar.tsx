@@ -23,6 +23,11 @@ import {
   History,
   FileBarChart,
   Crown,
+  Dumbbell,
+  Gauge,
+  UserCheck,
+  Bell,
+  Settings2,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -31,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useSubscription } from "@/hooks/useSubscription"
+import { useGymModule } from "@/hooks/useGymModule"
 import { clearAuth } from "@/lib/auth"
 
 interface User {
@@ -42,6 +48,19 @@ interface User {
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  {
+    href: "/academia",
+    label: "Academia",
+    icon: Dumbbell,
+    gym: true,
+    children: [
+      { href: "/academia", label: "Painel", icon: Gauge },
+      { href: "/academia/checkin", label: "Registrar presença", icon: UserCheck },
+      { href: "/academia/alunos", label: "Alunos", icon: Users },
+      { href: "/academia/avisos", label: "Avisos", icon: Bell },
+      { href: "/academia/configuracoes", label: "Regras automáticas", icon: Settings2 },
+    ],
+  },
   { href: "/ponto", label: "Bater Ponto", icon: Clock, premium: true },
   { href: "/colaboradores", label: "Colaboradores", icon: Users, admin: true, premium: true },
   { href: "/clientes", label: "Clientes", icon: UserRound },
@@ -134,9 +153,9 @@ function NavItemWithChildren({
   collapsed?: boolean
   onClose?: () => void
 }) {
-  const [open, setOpen] = useState(pathname.startsWith("/estoque"))
+  const [open, setOpen] = useState(pathname.startsWith(item.href))
   const Icon = item.icon
-  const disabled = item.premium && !isPremium
+  const disabled = "premium" in item && item.premium && !isPremium
 
   if (disabled) {
     return (
@@ -158,7 +177,7 @@ function NavItemWithChildren({
     )
   }
 
-  const isParentActive = pathname.startsWith("/estoque")
+  const isParentActive = pathname.startsWith(item.href)
 
   if (collapsed) {
     return (
@@ -251,6 +270,7 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapsed }: Sideb
   const pathname = usePathname()
   const router = useRouter()
   const { isPremium } = useSubscription()
+  const { enabled: gymEnabled } = useGymModule()
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
@@ -300,6 +320,7 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapsed }: Sideb
 
       <nav className={cn("flex-1 overflow-y-auto p-3 space-y-1", isCollapsed && "px-2")}>
         {navItems.map((item) => {
+          if ("gym" in item && item.gym && !gymEnabled) return null
           if ("children" in item && item.children) {
             return (
               <NavItemWithChildren

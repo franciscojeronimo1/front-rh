@@ -4,6 +4,7 @@
  */
 
 import { resetSubscriptionCacheForNewSession } from "@/lib/subscription-memory-cache"
+import { resetGymModuleCache } from "@/lib/academia/module-cache"
 
 export const AUTH_COOKIE_NAME = "auth-token"
 /** Cookie expira em 7 dias (em segundos). */
@@ -16,6 +17,7 @@ const COOKIE_MAX_AGE = 7 * 24 * 60 * 60
 export function setAuthToken(token: string): void {
   if (typeof window === "undefined") return
   resetSubscriptionCacheForNewSession()
+  resetGymModuleCache()
   localStorage.setItem("token", token)
   document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`
 }
@@ -27,6 +29,7 @@ export function setAuthToken(token: string): void {
 export function clearAuth(): void {
   if (typeof window === "undefined") return
   resetSubscriptionCacheForNewSession()
+  resetGymModuleCache()
   localStorage.removeItem("token")
   localStorage.removeItem("user")
   document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`

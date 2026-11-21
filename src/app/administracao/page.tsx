@@ -38,6 +38,7 @@ import {
   Settings,
 } from "lucide-react"
 import { TableSkeleton } from "@/components/ui/table-skeleton"
+import { GymModuleCard } from "@/components/academia/gym-module-card"
 import {
   getUsers,
   createStaff,
@@ -306,6 +307,8 @@ function AdministracaoContent() {
         )}
 
      
+
+        <GymModuleCard variant="admin" />
 
         {/* Card de Assinatura */}
         <Card
