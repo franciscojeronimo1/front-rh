@@ -82,7 +82,7 @@ const navItems = [
       { href: "/estoque/relatorios", label: "Relatórios", icon: FileBarChart },
     ],
   },
-  { href: "/administracao", label: "Administração", icon: Building2, admin: true },
+  { href: "/administracao", label: "Administração", icon: Building2, admin: true, standard: true },
 ] as const
 
 function NavLink({

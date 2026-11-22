@@ -72,7 +72,7 @@ export function homePathFor(t: BusinessType | null | undefined): string {
 }
 
 /** Rotas do sistema atual (escondidas para academia). */
-export const STANDARD_ONLY_PATHS = ["/dashboard", "/ponto", "/colaboradores", "/clientes", "/estoque"]
+export const STANDARD_ONLY_PATHS = ["/dashboard", "/ponto", "/colaboradores", "/clientes", "/estoque", "/administracao"]
 /** Rotas exclusivas da academia. */
 export const GYM_ONLY_PATHS = ["/academia"]
 

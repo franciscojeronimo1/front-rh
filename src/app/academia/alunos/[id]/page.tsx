@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { toast } from "sonner"
 import {
   ArrowLeft,
@@ -12,7 +12,6 @@ import {
   MessageCircle,
   Pencil,
   RotateCcw,
-  Trash2,
   UserCheck,
   UserX,
   X,
@@ -32,7 +31,6 @@ import {
   cancelMembership,
   createCheckIn,
   deactivateGymMember,
-  deleteGymMember,
   getGymMember,
   getMemberPayments,
   getMemberships,
@@ -70,7 +68,6 @@ const PAYMENT_STATUS: Record<GymPayment["status"], { label: string; tone: "ok" |
 
 export default function AlunoDetalhePage() {
   const params = useParams()
-  const router = useRouter()
   const id = params.id as string
   const isAdmin = useIsAdmin()
 
@@ -107,18 +104,6 @@ export default function AlunoDetalhePage() {
       await load()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro")
-    }
-  }
-
-  const remove = async () => {
-    if (!member) return
-    if (!window.confirm(`Excluir ${member.name}? Presenças, matrículas e mensalidades dele também serão apagadas.`)) return
-    try {
-      await deleteGymMember(member.id)
-      toast.success("Aluno excluído")
-      router.push("/academia/alunos")
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao excluir")
     }
   }
 
@@ -195,11 +180,6 @@ export default function AlunoDetalhePage() {
                   <UserX className="mr-2 h-4 w-4" /> Desativar
                 </Button>
               )
-            )}
-            {isAdmin && (
-              <Button variant="ghost" size="icon" className="text-red-600" onClick={remove} title="Excluir aluno">
-                <Trash2 className="h-4 w-4" />
-              </Button>
             )}
           </div>
         </div>

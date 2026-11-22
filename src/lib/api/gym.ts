@@ -223,10 +223,6 @@ export function createGymMember(data: MemberInput & { name: string; planId?: str
   )
 }
 
-export function deleteGymMember(id: string) {
-  return json<{ message: string }>(authenticatedFetch(`/gym/members/${id}`, { method: "DELETE" }))
-}
-
 export function updateGymMember(id: string, data: MemberInput) {
   return json<{ message: string; member: GymMember }>(
     authenticatedFetch(`/gym/members/${id}`, { method: "PATCH", body: JSON.stringify(data) })
