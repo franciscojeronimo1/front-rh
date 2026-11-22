@@ -24,6 +24,8 @@ export interface Subscription {
   expiresAt?: string
   trialEndsAt?: string | null
   cancelAtPeriodEnd?: boolean
+  /** "MANUAL" = cobrança controlada manualmente (sem Stripe): não mostrar nada de pagamento. */
+  billingManaged?: "STRIPE" | "MANUAL"
 }
 
 /**

@@ -4,6 +4,8 @@
  */
 
 import { resetSubscriptionCacheForNewSession } from "@/lib/subscription-memory-cache"
+import { resetBusinessTypeCache } from "@/lib/business-type"
+import { resetBillingModeCache } from "@/lib/billing-mode"
 
 export const AUTH_COOKIE_NAME = "auth-token"
 /** Cookie expira em 7 dias (em segundos). */
@@ -16,6 +18,8 @@ const COOKIE_MAX_AGE = 7 * 24 * 60 * 60
 export function setAuthToken(token: string): void {
   if (typeof window === "undefined") return
   resetSubscriptionCacheForNewSession()
+  resetBusinessTypeCache()
+  resetBillingModeCache()
   localStorage.setItem("token", token)
   document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`
 }
@@ -27,6 +31,8 @@ export function setAuthToken(token: string): void {
 export function clearAuth(): void {
   if (typeof window === "undefined") return
   resetSubscriptionCacheForNewSession()
+  resetBusinessTypeCache()
+  resetBillingModeCache()
   localStorage.removeItem("token")
   localStorage.removeItem("user")
   document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`

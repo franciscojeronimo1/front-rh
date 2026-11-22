@@ -42,8 +42,11 @@ export default function Dashboard() {
     isPremium,
     isTrialing,
     needsPayment,
+    isBillingManual,
     isLoading: isLoadingSubscription,
   } = useSubscription()
+  /** Cobrança manual (ex.: academia): nada de upgrade/pagamento na tela. */
+  const showBilling = !isLoadingSubscription && !isBillingManual
 
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -119,7 +122,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto">
-        {showUpgradeMessage && (
+        {showUpgradeMessage && !isBillingManual && (
           <Alert className="mb-6 border-amber-500/50 bg-amber-500/10">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -145,7 +148,7 @@ export default function Dashboard() {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-muted-foreground">
               <span>Sistema de gestão empresarial</span>
-              {!isLoadingSubscription && needsPayment && (
+              {showBilling && needsPayment && (
                 <>
                   <span className="text-amber-600 dark:text-amber-400">• Pagamento pendente</span>
                   {user?.role === "ADMIN" && (
@@ -171,7 +174,7 @@ export default function Dashboard() {
                   )}
                 </>
               )}
-              {!isLoadingSubscription && !isPremium && !needsPayment && (
+              {showBilling && !isPremium && !needsPayment && (
                 <>
                   <span className="text-amber-600 dark:text-amber-400">• Plano gratuito</span>
                   {user?.role === "ADMIN" && (
@@ -197,14 +200,14 @@ export default function Dashboard() {
                   )}
                 </>
               )}
-              {!isLoadingSubscription && isPremium && isTrialing && (
+              {showBilling && isPremium && isTrialing && (
                 <span className="text-amber-600 dark:text-amber-400">• Teste Premium</span>
               )}
             </div>
-            {!isLoadingSubscription && needsPayment && subscription?.message && (
+            {showBilling && needsPayment && subscription?.message && (
               <p className="text-sm text-muted-foreground max-w-2xl">{subscription.message}</p>
             )}
-            {!isLoadingSubscription && isPremium && isTrialing && subscription?.trialEndsAt && (
+            {showBilling && isPremium && isTrialing && subscription?.trialEndsAt && (
               <p className="text-sm text-muted-foreground">
                 Seu Teste Premium termina em {formatTrialEndsAt(subscription.trialEndsAt)}.
               </p>

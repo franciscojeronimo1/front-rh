@@ -6,6 +6,7 @@ const AUTH_COOKIE_NAME = "auth-token"
 /** Rotas que exigem autenticação. */
 const PROTECTED_PATHS = [
   "/dashboard",
+  "/academia",
   "/ponto",
   "/colaboradores",
   "/clientes",

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { getSubscription, type Subscription } from "@/lib/api"
+import { setBillingManual } from "@/lib/billing-mode"
 
 export function useSubscription() {
   const [subscription, setSubscription] = useState<Subscription | null>(null)
@@ -20,6 +21,7 @@ export function useSubscription() {
       setIsLoading(true)
       setError(null)
       const data = await getSubscription({ bypassCache: opts?.bypassCache === true })
+      setBillingManual(data.billingManaged === "MANUAL")
       setSubscription(data)
     } catch (err) {
       setSubscription(null)
@@ -47,13 +49,16 @@ export function useSubscription() {
   const isTrialing =
     subscription?.isTrialing === true || subscription?.status === "TRIAL"
 
-  const needsPayment = subscription?.needsPayment === true
+  /** Cobrança manual: esconder card de assinatura, banners, upgrade e coroa Premium. */
+  const isBillingManual = subscription?.billingManaged === "MANUAL"
+  const needsPayment = !isBillingManual && subscription?.needsPayment === true
 
   return {
     subscription,
     isPremium: subscription?.isPremium ?? false,
     isTrialing,
     needsPayment,
+    isBillingManual,
     isLoading,
     error,
     refetch,
