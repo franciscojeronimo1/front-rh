@@ -10,7 +10,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ActiveToggle } from "@/components/ui/active-toggle"
 import { getGymSettings, updateGymSettings, type GymSettings } from "@/lib/api"
-import { setGymModuleEnabled } from "@/hooks/useGymModule"
 import { useIsAdmin } from "@/hooks/useIsAdmin"
 import { AcademiaPageHeader } from "@/components/academia/academia-page-header"
 import { formatRelative } from "@/lib/academia/format"
@@ -114,8 +113,7 @@ export default function ConfiguracoesAcademiaPage() {
     if (!form || invalid) return
     try {
       setSaving(true)
-      const { settings } = await updateGymSettings(form)
-      setGymModuleEnabled(settings.enabled)
+      await updateGymSettings(form)
       toast.success("Configurações salvas. O sistema já vai usar as novas regras.")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar")
@@ -167,17 +165,9 @@ export default function ConfiguracoesAcademiaPage() {
           </Alert>
         )}
 
-        <Card className="rounded-2xl shadow-sm">
-          <CardContent className="divide-y p-5">
-            <ToggleRow
-              title="Controle inteligente de alunos"
-              description={`Liga o acompanhamento automático. ${lastEvaluatedAt ? `Última análise ${formatRelative(lastEvaluatedAt)}.` : ""}`}
-              checked={form.enabled}
-              onChange={(v) => set("enabled", v)}
-              disabled={readOnly}
-            />
-          </CardContent>
-        </Card>
+        {lastEvaluatedAt && (
+          <p className="text-sm text-muted-foreground">Última análise automática {formatRelative(lastEvaluatedAt)}.</p>
+        )}
 
         <Card className="rounded-2xl shadow-sm">
           <CardHeader>

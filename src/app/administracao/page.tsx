@@ -38,7 +38,6 @@ import {
   Settings,
 } from "lucide-react"
 import { TableSkeleton } from "@/components/ui/table-skeleton"
-import { GymModuleCard } from "@/components/academia/gym-module-card"
 import {
   getUsers,
   createStaff,
@@ -51,6 +50,8 @@ import {
   type CreateStaffRequest,
 } from "@/lib/api"
 import { useSubscription } from "@/hooks/useSubscription"
+import { useBusinessType } from "@/hooks/useBusinessType"
+import { getCachedBusinessType, homePathFor } from "@/lib/business-type"
 import { formatSubscriptionDate, formatTrialEndsAt } from "@/lib/subscription-format"
 
 const MAX_STAFF = 5
@@ -89,9 +90,11 @@ function AdministracaoContent() {
     isPremium,
     isTrialing,
     needsPayment,
+    isBillingManual,
     isLoading: isLoadingSubscription,
     refetch: refetchSubscription,
   } = useSubscription()
+  const { businessType } = useBusinessType()
 
   const showSuccessMessage = searchParams.get("success") === "1"
 
@@ -165,7 +168,7 @@ function AdministracaoContent() {
       if (userStr) {
         const user = JSON.parse(userStr)
         if (user.role !== "ADMIN") {
-          router.push("/dashboard")
+          router.push(homePathFor(getCachedBusinessType()))
           return
         }
       }
@@ -278,7 +281,7 @@ function AdministracaoContent() {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
-        <Link href="/dashboard" className="block">
+        <Link href={homePathFor(businessType)} className="block">
           <Button
             variant="default"
             size="lg"
@@ -308,9 +311,9 @@ function AdministracaoContent() {
 
      
 
-        <GymModuleCard variant="admin" />
-
-        {/* Card de Assinatura */}
+        {/* Card de Assinatura (escondido quando a cobrança é manual, ex.: academia) */}
+        {!isBillingManual && (
+        <>
         <Card
           className={
             isPremium || needsPayment ? "border-amber-500/50 bg-amber-500/5" : ""
@@ -454,6 +457,8 @@ function AdministracaoContent() {
             </CardContent>
           )}
         </Card>
+        </>
+        )}
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

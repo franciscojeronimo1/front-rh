@@ -2,7 +2,10 @@ import { authenticatedFetch, authenticatedFetchWithRetry } from "./http"
 import type { PaginationInfo } from "./types"
 
 export type MemberStatus = "ACTIVE" | "AT_RISK" | "INACTIVE"
-export type MemberFilter = "ALL" | "ACTIVE" | "AT_RISK" | "INACTIVE" | "PLAN_EXPIRING" | "PLAN_EXPIRED"
+export type MemberFilter = "ALL" | "ACTIVE" | "AT_RISK" | "INACTIVE" | "PLAN_EXPIRING" | "PLAN_EXPIRED" | "NO_PLAN"
+export type PaymentMethod = "CASH" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD" | "TRANSFER" | "OTHER"
+export type PaymentStatus = "PENDING" | "PAID" | "CANCELLED"
+export type AccessMethod = "MANUAL" | "PASSWORD" | "FINGERPRINT" | "CARD"
 export type DeactivationReason = "AUTO_ABSENCE" | "AUTO_PLAN_EXPIRED" | "MANUAL"
 export type GymNotificationType =
   | "MEMBER_AT_RISK"
@@ -14,7 +17,6 @@ export type GymNotificationType =
 export interface GymSettings {
   id: string
   organizationId: string
-  enabled: boolean
   atRiskAfterDays: number
   inactiveAfterDays: number
   autoDeactivate: boolean
@@ -33,10 +35,14 @@ export type UpdateGymSettingsRequest = Partial<
 export interface GymMember {
   id: string
   name: string
-  cpf: string
-  phone: string
+  cpf: string | null
+  phone: string | null
   email?: string | null
-  active: boolean
+  /** YYYY-MM-DD */
+  birthDate?: string | null
+  /** Só vem no detalhe/cadastro (senha numérica da catraca) */
+  accessCode?: string | null
+  notes?: string | null
   memberStatus: MemberStatus
   lastCheckInAt: string | null
   activeSince: string | null
@@ -57,14 +63,13 @@ export interface GymNotification {
   type: GymNotificationType
   title: string
   message: string
-  clientId: string | null
+  memberId: string | null
   readAt: string | null
   createdAt: string
-  client?: { id: string; name: string; phone: string; memberStatus: MemberStatus } | null
+  member?: { id: string; name: string; phone: string | null; memberStatus: MemberStatus } | null
 }
 
 export interface GymDashboard {
-  enabled: boolean
   lastEvaluatedAt: string | null
   rules: { atRiskAfterDays: number; inactiveAfterDays: number; autoDeactivate: boolean }
   totals: {
@@ -76,6 +81,7 @@ export interface GymDashboard {
     checkInsWeek: number
     plansExpiringSoon: number
     plansExpired: number
+    paymentsOverdue: number
     unreadNotifications: number
   }
   checkInsByDay: { date: string; count: number }[]
@@ -85,10 +91,65 @@ export interface GymDashboard {
 
 export interface GymCheckIn {
   id: string
-  clientId: string
-  checkedInAt: string
-  client?: { id: string; name: string; memberStatus: MemberStatus; planName: string | null }
+  memberId: string | null
+  occurredAt: string
+  method: AccessMethod
+  direction: "IN" | "OUT"
+  result: "GRANTED" | "DENIED"
+  reason?: string | null
+  member?: { id: string; name: string; memberStatus: MemberStatus; planName: string | null } | null
   user?: { id: string; name: string } | null
+}
+
+export interface MembershipPlan {
+  id: string
+  name: string
+  description: string | null
+  price: number
+  durationMonths: number
+  durationDays: number
+  active: boolean
+  _count?: { memberships: number }
+}
+
+export interface Membership {
+  id: string
+  memberId: string
+  planId: string | null
+  planName: string
+  price: number
+  /** YYYY-MM-DD */
+  startDate: string
+  /** YYYY-MM-DD */
+  endDate: string
+  status: "ACTIVE" | "CANCELLED"
+  notes: string | null
+  createdAt: string
+}
+
+export interface GymPayment {
+  id: string
+  memberId: string
+  membershipId: string | null
+  amount: number
+  /** YYYY-MM-DD */
+  dueDate: string
+  status: PaymentStatus
+  method: PaymentMethod | null
+  paidAt: string | null
+  notes: string | null
+  receivedBy?: { id: string; name: string } | null
+}
+
+export interface MemberInput {
+  name?: string
+  cpf?: string | null
+  phone?: string | null
+  email?: string | null
+  birthDate?: string | null
+  notes?: string | null
+  accessCode?: string | null
+  autoControl?: boolean
 }
 
 export interface CheckInResult {
@@ -149,15 +210,24 @@ export function getGymMembers(params: {
 }
 
 export function getGymMember(id: string) {
-  return json<{ member: GymMember; recentCheckIns: { id: string; checkedInAt: string }[] }>(
-    authenticatedFetch(`/gym/members/${id}`)
+  return json<{
+    member: GymMember
+    recentCheckIns: Pick<GymCheckIn, "id" | "occurredAt" | "method" | "direction" | "result" | "reason">[]
+    credentials: { id: string; type: "PASSWORD" | "FINGERPRINT" | "CARD"; label: string | null; active: boolean }[]
+  }>(authenticatedFetch(`/gym/members/${id}`))
+}
+
+export function createGymMember(data: MemberInput & { name: string; planId?: string; startDate?: string }) {
+  return json<{ message: string; member: GymMember }>(
+    authenticatedFetch("/gym/members", { method: "POST", body: JSON.stringify(data) })
   )
 }
 
-export function updateGymMember(
-  id: string,
-  data: { planName?: string | null; planExpiresAt?: string | null; autoControl?: boolean }
-) {
+export function deleteGymMember(id: string) {
+  return json<{ message: string }>(authenticatedFetch(`/gym/members/${id}`, { method: "DELETE" }))
+}
+
+export function updateGymMember(id: string, data: MemberInput) {
   return json<{ message: string; member: GymMember }>(
     authenticatedFetch(`/gym/members/${id}`, { method: "PATCH", body: JSON.stringify(data) })
   )
@@ -175,9 +245,9 @@ export function reactivateGymMember(id: string) {
   )
 }
 
-export function createCheckIn(clientId: string) {
+export function createCheckIn(memberId: string) {
   return json<CheckInResult>(
-    authenticatedFetch("/gym/checkins", { method: "POST", body: JSON.stringify({ clientId }) })
+    authenticatedFetch("/gym/checkins", { method: "POST", body: JSON.stringify({ memberId }) })
   )
 }
 
@@ -212,4 +282,73 @@ export function markNotificationRead(id: string) {
 
 export function markAllNotificationsRead() {
   return json<{ updated: number }>(authenticatedFetch("/gym/notifications/read-all", { method: "POST" }))
+}
+
+// ---------- Planos ----------
+
+export function getMembershipPlans(onlyActive = false) {
+  return json<{ plans: MembershipPlan[] }>(
+    authenticatedFetchWithRetry(`/gym/plans${onlyActive ? "?active=true" : ""}`)
+  )
+}
+
+export type MembershipPlanInput = Pick<MembershipPlan, "name" | "price" | "durationMonths" | "durationDays" | "active"> & {
+  description?: string | null
+}
+
+export function createMembershipPlan(data: MembershipPlanInput) {
+  return json<{ message: string; plan: MembershipPlan }>(
+    authenticatedFetch("/gym/plans", { method: "POST", body: JSON.stringify(data) })
+  )
+}
+
+export function updateMembershipPlan(id: string, data: Partial<MembershipPlanInput>) {
+  return json<{ message: string; plan: MembershipPlan }>(
+    authenticatedFetch(`/gym/plans/${id}`, { method: "PUT", body: JSON.stringify(data) })
+  )
+}
+
+// ---------- Matrículas e mensalidades ----------
+
+export interface CreateMembershipRequest {
+  planId?: string
+  planName?: string
+  price?: number
+  startDate?: string
+  endDate?: string
+  paid?: boolean
+  paymentMethod?: PaymentMethod
+  notes?: string | null
+}
+
+export function getMemberships(memberId: string) {
+  return json<{ memberships: Membership[] }>(authenticatedFetch(`/gym/members/${memberId}/memberships`))
+}
+
+export function createMembership(memberId: string, data: CreateMembershipRequest) {
+  return json<{ membership: Membership; member: GymMember; reactivated: boolean }>(
+    authenticatedFetch(`/gym/members/${memberId}/memberships`, { method: "POST", body: JSON.stringify(data) })
+  )
+}
+
+export function cancelMembership(membershipId: string) {
+  return json<{ message: string; member: GymMember }>(
+    authenticatedFetch(`/gym/memberships/${membershipId}/cancel`, { method: "POST" })
+  )
+}
+
+export function getMemberPayments(memberId: string) {
+  return json<{ payments: GymPayment[] }>(authenticatedFetch(`/gym/members/${memberId}/payments`))
+}
+
+export function payGymPayment(paymentId: string, data: { method: PaymentMethod; amount?: number }) {
+  return json<{ message: string; payment: GymPayment }>(
+    authenticatedFetch(`/gym/payments/${paymentId}/pay`, { method: "POST", body: JSON.stringify(data) })
+  )
+}
+
+export function cancelGymPayment(paymentId: string) {
+  return json<{ message: string; payment: GymPayment }>(
+    authenticatedFetch(`/gym/payments/${paymentId}/cancel`, { method: "POST" })
+  )
 }

@@ -28,6 +28,7 @@ import {
   UserCheck,
   Bell,
   Settings2,
+  CreditCard,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -36,7 +37,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useSubscription } from "@/hooks/useSubscription"
-import { useGymModule } from "@/hooks/useGymModule"
+import { useBusinessType } from "@/hooks/useBusinessType"
+import { homePathFor } from "@/lib/business-type"
 import { clearAuth } from "@/lib/auth"
 
 interface User {
@@ -47,7 +49,7 @@ interface User {
 }
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, standard: true },
   {
     href: "/academia",
     label: "Academia",
@@ -57,18 +59,20 @@ const navItems = [
       { href: "/academia", label: "Painel", icon: Gauge },
       { href: "/academia/checkin", label: "Registrar presença", icon: UserCheck },
       { href: "/academia/alunos", label: "Alunos", icon: Users },
+      { href: "/academia/planos", label: "Planos", icon: CreditCard },
       { href: "/academia/avisos", label: "Avisos", icon: Bell },
       { href: "/academia/configuracoes", label: "Regras automáticas", icon: Settings2 },
     ],
   },
-  { href: "/ponto", label: "Bater Ponto", icon: Clock, premium: true },
-  { href: "/colaboradores", label: "Colaboradores", icon: Users, admin: true, premium: true },
-  { href: "/clientes", label: "Clientes", icon: UserRound },
+  { href: "/ponto", label: "Bater Ponto", icon: Clock, premium: true, standard: true },
+  { href: "/colaboradores", label: "Colaboradores", icon: Users, admin: true, premium: true, standard: true },
+  { href: "/clientes", label: "Clientes", icon: UserRound, standard: true },
   {
     href: "/estoque",
     label: "Estoque",
     icon: Package,
     premium: true,
+    standard: true,
     children: [
       { href: "/estoque", label: "Visão geral", icon: Boxes },
       { href: "/estoque/produtos", label: "Produtos", icon: Package },
@@ -269,8 +273,10 @@ interface SidebarProps {
 export function Sidebar({ onClose, collapsed = false, onToggleCollapsed }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const { isPremium } = useSubscription()
-  const { enabled: gymEnabled } = useGymModule()
+  const { isPremium: isPremiumPlan, isBillingManual } = useSubscription()
+  // Cobrança manual: tudo liberado e nada de coroa/upgrade
+  const isPremium = isPremiumPlan || isBillingManual
+  const { businessType, isGym: gymEnabled } = useBusinessType()
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
@@ -306,7 +312,7 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapsed }: Sideb
         )}
       >
         <Link
-          href="/dashboard"
+          href={homePathFor(businessType)}
           onClick={onClose}
           className={cn(
             "flex items-center font-semibold",
@@ -320,7 +326,10 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapsed }: Sideb
 
       <nav className={cn("flex-1 overflow-y-auto p-3 space-y-1", isCollapsed && "px-2")}>
         {navItems.map((item) => {
+          // Menu por tipo de empresa: academia vê só Academia (+ Administração); as demais, o sistema atual
+          if (businessType === null && (("gym" in item && item.gym) || ("standard" in item && item.standard))) return null
           if ("gym" in item && item.gym && !gymEnabled) return null
+          if ("standard" in item && item.standard && gymEnabled) return null
           if ("children" in item && item.children) {
             return (
               <NavItemWithChildren

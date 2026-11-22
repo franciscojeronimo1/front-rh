@@ -7,6 +7,8 @@ export interface LoginResponse {
     name: string
     email: string
     role: "ADMIN" | "STAFF"
+    organizationId?: string | null
+    businessType?: "STANDARD" | "GYM"
   }
   token: string
 }

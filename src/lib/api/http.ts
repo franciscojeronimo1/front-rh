@@ -1,4 +1,5 @@
 import { getAuthToken, redirectToLogin } from "@/lib/auth"
+import { isBillingManual } from "@/lib/billing-mode"
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"
 
@@ -21,7 +22,12 @@ export class ApiError extends Error {
 
 function getMessageByStatus(status: number, code?: string): string {
   if (status === 403 && code === "SUBSCRIPTION_REQUIRED") {
-    return "Plano Premium necessário. Faça upgrade na tela de Administração."
+    return isBillingManual()
+      ? "Você não tem permissão para acessar este recurso."
+      : "Plano Premium necessário. Faça upgrade na tela de Administração."
+  }
+  if (status === 403 && code === "BUSINESS_TYPE_NOT_ALLOWED") {
+    return "Este recurso não faz parte do sistema da sua empresa."
   }
   switch (status) {
     case 401:

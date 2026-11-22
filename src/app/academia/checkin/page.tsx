@@ -18,7 +18,7 @@ import {
 import { AcademiaPageHeader } from "@/components/academia/academia-page-header"
 import { MemberStatusBadge, ToneText } from "@/components/academia/member-status-badge"
 import { NOTIFICATIONS_CHANGED_EVENT } from "@/components/academia/notification-bell"
-import { effectiveStatus, formatTimeBR, lastCheckInLabel, planLabel } from "@/lib/academia/format"
+import { ACCESS_METHOD_LABEL, effectiveStatus, formatTimeBR, lastCheckInLabel, planLabel } from "@/lib/academia/format"
 import { formatCpf } from "@/lib/schemas/client"
 import { cn } from "@/lib/utils"
 
@@ -124,7 +124,7 @@ export default function CheckInPage() {
       <div className="mx-auto max-w-6xl space-y-6">
         <AcademiaPageHeader
           title="Registrar presença"
-          subtitle="Digite o nome, CPF ou telefone do aluno e toque em Registrar. Rápido assim."
+          subtitle="Digite o nome, CPF, telefone ou senha da catraca do aluno e toque em Registrar."
         />
 
         <div className="grid gap-6 lg:grid-cols-5">
@@ -151,7 +151,7 @@ export default function CheckInPage() {
                 <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
                   <p className="text-sm text-muted-foreground">Nenhum aluno encontrado para “{search}”.</p>
                   <Button asChild variant="outline" size="sm">
-                    <Link href="/clientes/novo">
+                    <Link href="/academia/alunos?novo=1">
                       <UserPlus className="mr-2 h-4 w-4" /> Cadastrar novo aluno
                     </Link>
                   </Button>
@@ -178,7 +178,7 @@ export default function CheckInPage() {
                           <MemberStatusBadge status={status} />
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          CPF {formatCpf(m.cpf)} · {lastCheckInLabel(m)}
+                          {m.cpf ? `CPF ${formatCpf(m.cpf)} · ` : ""}{lastCheckInLabel(m)}
                         </p>
                         <p className="mt-0.5 text-xs">
                           {m.planName ? <span className="text-slate-600">{m.planName} · </span> : null}
@@ -216,7 +216,7 @@ export default function CheckInPage() {
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Check className="h-5 w-5 text-emerald-600" /> Presenças de hoje
               </CardTitle>
-              <CardDescription>{today.length} registro(s)</CardDescription>
+              <CardDescription>{today.filter((c) => c.result === "GRANTED" && c.direction === "IN").length} presença(s)</CardDescription>
             </CardHeader>
             <CardContent>
               {loadingToday ? (
@@ -228,9 +228,16 @@ export default function CheckInPage() {
                   {today.map((c) => (
                     <li key={c.id} className="flex items-center gap-3 py-2.5">
                       <span className="w-12 shrink-0 font-mono text-sm text-muted-foreground">
-                        {formatTimeBR(c.checkedInAt)}
+                        {formatTimeBR(c.occurredAt)}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium">{c.client?.name ?? "Aluno"}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                        {c.member?.name ?? "Não identificado"}
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          {ACCESS_METHOD_LABEL[c.method] ?? c.method}
+                          {c.result === "DENIED" ? ` · negado${c.reason ? `: ${c.reason}` : ""}` : ""}
+                        </span>
+                      </span>
+                      {c.method === "MANUAL" && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -240,6 +247,7 @@ export default function CheckInPage() {
                       >
                         <Undo2 className="h-4 w-4" />
                       </Button>
+                      )}
                     </li>
                   ))}
                 </ul>

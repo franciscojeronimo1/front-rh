@@ -48,7 +48,8 @@ import {
 } from "@/lib/api"
 import { AcademiaPageHeader } from "@/components/academia/academia-page-header"
 import { MemberStatusBadge, ToneText } from "@/components/academia/member-status-badge"
-import { EditPlanDialog } from "@/components/academia/edit-plan-dialog"
+import { MemberFormDialog } from "@/components/academia/member-form-dialog"
+import { MembershipDialog } from "@/components/academia/membership-dialog"
 import { useIsAdmin } from "@/hooks/useIsAdmin"
 import {
   effectiveStatus,
@@ -67,6 +68,7 @@ const FILTERS: { value: MemberFilter; label: string }[] = [
   { value: "INACTIVE", label: "Inativos" },
   { value: "PLAN_EXPIRING", label: "Plano vencendo" },
   { value: "PLAN_EXPIRED", label: "Plano vencido" },
+  { value: "NO_PLAN", label: "Sem plano" },
 ]
 
 const LIMIT = 30
@@ -103,7 +105,8 @@ function AlunosContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState(q)
-  const [editing, setEditing] = useState<GymMember | null>(null)
+  const [planFor, setPlanFor] = useState<GymMember | null>(null)
+  const [creating, setCreating] = useState(searchParams.get("novo") === "1")
 
   const setUrl = useCallback(
     (u: { status?: MemberFilter; page?: number; q?: string }) => {
@@ -180,17 +183,19 @@ function AlunosContent() {
           <DropdownMenuItem onClick={() => quickCheckIn(m)}>
             <UserCheck className="h-4 w-4" /> Registrar presença
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setEditing(m)}>
-            <CalendarClock className="h-4 w-4" /> Plano e vencimento
+          <DropdownMenuItem onClick={() => setPlanFor(m)}>
+            <CalendarClock className="h-4 w-4" /> Matricular / renovar
           </DropdownMenuItem>
+          {whatsappLink(m.phone, m.name) && (
+            <DropdownMenuItem asChild>
+              <a href={whatsappLink(m.phone, m.name, m.daysToPlanExpiry !== null && m.daysToPlanExpiry <= 5 ? "plan" : "miss") ?? undefined} target="_blank" rel="noopener noreferrer">
+                <MessageCircle className="h-4 w-4" /> Chamar no WhatsApp
+              </a>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem asChild>
-            <a href={whatsappLink(m.phone, m.name, m.daysToPlanExpiry !== null && m.daysToPlanExpiry <= 5 ? "plan" : "miss")} target="_blank" rel="noopener noreferrer">
-              <MessageCircle className="h-4 w-4" /> Chamar no WhatsApp
-            </a>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href={`/clientes/${m.id}`}>
-              <Pencil className="h-4 w-4" /> Ver / editar cadastro
+            <Link href={`/academia/alunos/${m.id}`}>
+              <Pencil className="h-4 w-4" /> Ver ficha / editar
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -220,10 +225,8 @@ function AlunosContent() {
           title="Alunos"
           subtitle="Status atualizado automaticamente pela frequência de cada aluno."
           actions={
-            <Button asChild>
-              <Link href="/clientes/novo">
-                <UserPlus className="mr-2 h-4 w-4" /> Novo aluno
-              </Link>
+            <Button onClick={() => setCreating(true)}>
+              <UserPlus className="mr-2 h-4 w-4" /> Novo aluno
             </Button>
           }
         />
@@ -292,8 +295,8 @@ function AlunosContent() {
                     return (
                       <TableRow key={m.id}>
                         <TableCell>
-                          <p className="font-medium">{m.name}</p>
-                          <p className="text-xs text-muted-foreground">{formatPhone(m.phone)}</p>
+                          <Link href={`/academia/alunos/${m.id}`} className="font-medium hover:underline">{m.name}</Link>
+                          <p className="text-xs text-muted-foreground">{m.phone ? formatPhone(m.phone) : "Sem telefone"}</p>
                         </TableCell>
                         <TableCell>
                           <MemberStatusBadge status={st} />
@@ -366,11 +369,16 @@ function AlunosContent() {
         )}
       </div>
 
-      <EditPlanDialog
-        member={editing}
-        open={editing !== null}
-        onOpenChange={(o) => !o && setEditing(null)}
+      <MembershipDialog
+        member={planFor}
+        open={planFor !== null}
+        onOpenChange={(o) => !o && setPlanFor(null)}
         onSaved={replaceMember}
+      />
+      <MemberFormDialog
+        open={creating}
+        onOpenChange={setCreating}
+        onSaved={(m) => router.push(`/academia/alunos/${m.id}`)}
       />
     </div>
   )

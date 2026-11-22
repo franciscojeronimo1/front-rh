@@ -25,10 +25,8 @@ import {
   getGymDashboard,
   markNotificationRead,
   runGymEvaluation,
-  updateGymSettings,
   type GymDashboard,
 } from "@/lib/api"
-import { setGymModuleEnabled } from "@/hooks/useGymModule"
 import { useIsAdmin } from "@/hooks/useIsAdmin"
 import { AcademiaPageHeader } from "@/components/academia/academia-page-header"
 import { NotificationItem } from "@/components/academia/notification-item"
@@ -88,7 +86,6 @@ export default function AcademiaPainelPage() {
   const [data, setData] = useState<GymDashboard | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [enabling, setEnabling] = useState(false)
   const [evaluating, setEvaluating] = useState(false)
 
   const load = useCallback(async () => {
@@ -96,7 +93,6 @@ export default function AcademiaPainelPage() {
       setError("")
       const res = await getGymDashboard()
       setData(res)
-      setGymModuleEnabled(res.enabled)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar o painel")
     } finally {
@@ -107,21 +103,6 @@ export default function AcademiaPainelPage() {
   useEffect(() => {
     void load()
   }, [load])
-
-  const handleEnable = async () => {
-    try {
-      setEnabling(true)
-      await updateGymSettings({ enabled: true })
-      setGymModuleEnabled(true)
-      toast.success("Controle inteligente de alunos ativado!")
-      setLoading(true)
-      await load()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível ativar")
-    } finally {
-      setEnabling(false)
-    }
-  }
 
   const handleEvaluate = async () => {
     try {
@@ -171,53 +152,6 @@ export default function AcademiaPainelPage() {
     )
   }
 
-  if (data && !data.enabled) {
-    return (
-      <div className="min-h-screen bg-background p-4 md:p-8">
-        <div className="mx-auto max-w-3xl">
-          <Card className="overflow-hidden rounded-2xl border-primary/20 shadow-sm">
-            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-                <Sparkles className="h-6 w-6" />
-              </span>
-              <h1 className="mt-4 text-2xl font-bold tracking-tight md:text-3xl">Controle inteligente de alunos</h1>
-              <p className="mt-2 text-muted-foreground">
-                O sistema acompanha a frequência de cada aluno sozinho e te avisa só quando precisa.
-              </p>
-            </div>
-            <CardContent className="space-y-4 p-8 pt-6">
-              <ul className="space-y-3 text-sm">
-                {[
-                  "Marca como “em risco” quem está há 7 dias sem treinar",
-                  "Desativa automaticamente quem sumiu há 30 dias",
-                  "Reativa sozinho quando o aluno volta e registra presença",
-                  "Avisa quando o plano está para vencer ou venceu",
-                  "Você pode mudar esses prazos quando quiser",
-                ].map((t) => (
-                  <li key={t} className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                    <span>{t}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-xs text-muted-foreground">
-                Alunos já cadastrados ganham um período de carência: a contagem começa no dia em que você ativar.
-              </p>
-              {isAdmin ? (
-                <Button size="lg" className="w-full sm:w-auto" onClick={handleEnable} disabled={enabling}>
-                  {enabling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                  Ativar agora
-                </Button>
-              ) : (
-                <p className="text-sm font-medium text-amber-700">Peça para um administrador ativar este recurso.</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
-  }
-
   if (!data) return null
   const t = data.totals
   const maxDay = Math.max(1, ...data.checkInsByDay.map((d) => d.count))
@@ -251,8 +185,8 @@ export default function AcademiaPainelPage() {
           <Kpi label="Presenças hoje" value={t.checkInsToday} caption={`${t.checkInsWeek} nos últimos 7 dias`} icon={UserCheck} tone="blue" href="/academia/checkin" />
         </div>
 
-        {(t.plansExpiringSoon > 0 || t.plansExpired > 0) && (
-          <div className="grid gap-3 sm:grid-cols-2">
+        {(t.plansExpiringSoon > 0 || t.plansExpired > 0 || t.paymentsOverdue > 0) && (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {t.plansExpiringSoon > 0 && (
               <Link href="/academia/alunos?status=PLAN_EXPIRING" className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 hover:bg-blue-100">
                 <CalendarClock className="h-5 w-5 shrink-0" />
@@ -263,6 +197,12 @@ export default function AcademiaPainelPage() {
               <Link href="/academia/alunos?status=PLAN_EXPIRED" className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 hover:bg-red-100">
                 <CalendarClock className="h-5 w-5 shrink-0" />
                 <span><strong>{t.plansExpired}</strong> aluno(s) ativo(s) com plano vencido</span>
+              </Link>
+            )}
+            {t.paymentsOverdue > 0 && (
+              <Link href="/academia/alunos" className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 hover:bg-amber-100">
+                <CalendarClock className="h-5 w-5 shrink-0" />
+                <span><strong>{t.paymentsOverdue}</strong> mensalidade(s) atrasada(s)</span>
               </Link>
             )}
           </div>
@@ -297,11 +237,13 @@ export default function AcademiaPainelPage() {
                         <p className="truncate font-medium">{m.name}</p>
                         <p className="text-xs text-amber-700">{lastCheckInLabel(m)}</p>
                       </div>
-                      <Button asChild size="sm" variant="outline" className="shrink-0 border-emerald-300 text-emerald-700 hover:bg-emerald-50">
-                        <a href={whatsappLink(m.phone, m.name)} target="_blank" rel="noopener noreferrer">
-                          <MessageCircle className="mr-1.5 h-4 w-4" /> Chamar
-                        </a>
-                      </Button>
+                      {whatsappLink(m.phone, m.name) && (
+                        <Button asChild size="sm" variant="outline" className="shrink-0 border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                          <a href={whatsappLink(m.phone, m.name) ?? undefined} target="_blank" rel="noopener noreferrer">
+                            <MessageCircle className="mr-1.5 h-4 w-4" /> Chamar
+                          </a>
+                        </Button>
+                      )}
                     </li>
                   ))}
                 </ul>

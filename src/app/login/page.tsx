@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { login, checkHealth } from "@/lib/api"
+import { homePathFor } from "@/lib/business-type"
 import { setAuthToken } from "@/lib/auth"
 import { Lock, Mail, Building2, AlertCircle, Loader2 } from "lucide-react"
 
@@ -38,8 +39,10 @@ function LoginForm() {
       // Aquecer o banco em background (cold start); não bloqueia o redirect
       checkHealth().catch(() => {})
 
-      const redirectTo = searchParams.get("redirect") || "/dashboard"
-      router.push(redirectTo.startsWith("/") ? redirectTo : "/dashboard")
+      // Academia vai direto para o painel da academia; o AppShell corrige rotas que não são do tipo da empresa
+      const home = homePathFor(response.user.businessType)
+      const redirectTo = searchParams.get("redirect") || home
+      router.push(redirectTo.startsWith("/") ? redirectTo : home)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login")
     } finally {

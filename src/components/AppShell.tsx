@@ -1,14 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Toaster } from "sonner"
 import { Sidebar } from "@/components/Sidebar"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NotificationBell } from "@/components/academia/notification-bell"
-import { useGymModule } from "@/hooks/useGymModule"
+import { useBusinessType } from "@/hooks/useBusinessType"
+import { homePathFor, isPathAllowed } from "@/lib/business-type"
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed"
 
@@ -16,7 +17,8 @@ const ROUTES_WITH_SIDEBAR = ["/dashboard", "/academia", "/ponto", "/colaboradore
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { enabled: gymEnabled } = useGymModule()
+  const router = useRouter()
+  const { businessType, isGym: gymEnabled } = useBusinessType()
   const [mounted, setMounted] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
@@ -38,6 +40,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     queueMicrotask(() => setMobileOpen(false))
   }, [pathname])
+
+  // Academia só vê o módulo Academia; demais empresas não veem a Academia.
+  const routeAllowed = !showSidebar || (businessType !== null && isPathAllowed(pathname, businessType))
+  useEffect(() => {
+    if (showSidebar && businessType !== null && !isPathAllowed(pathname, businessType)) {
+      router.replace(homePathFor(businessType))
+    }
+  }, [showSidebar, businessType, pathname, router])
 
   const handleToggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -116,7 +126,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <main className="flex-1">{children}</main>
+        <main className="flex-1">
+          {routeAllowed ? (
+            children
+          ) : (
+            <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted-foreground">
+              Carregando...
+            </div>
+          )}
+        </main>
       </div>
     </div>
     <Toaster richColors closeButton position="top-right" />

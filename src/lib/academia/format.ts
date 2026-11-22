@@ -6,8 +6,8 @@ export const MEMBER_STATUS_LABEL: Record<MemberStatus, string> = {
   INACTIVE: "Inativo",
 }
 
-export function effectiveStatus(member: Pick<GymMember, "active" | "memberStatus">): MemberStatus {
-  return member.active ? member.memberStatus : "INACTIVE"
+export function effectiveStatus(member: Pick<GymMember, "memberStatus">): MemberStatus {
+  return member.memberStatus
 }
 
 export function formatDateBR(value: string | null | undefined): string {
@@ -66,8 +66,9 @@ export function planLabel(member: Pick<GymMember, "planExpiresAt" | "daysToPlanE
 }
 
 /** Link para abrir conversa no WhatsApp com mensagem pronta (o dono só confirma o envio). */
-export function whatsappLink(phone: string, name: string, kind: "miss" | "plan" = "miss"): string {
-  const digits = phone.replace(/\D/g, "")
+export function whatsappLink(phone: string | null | undefined, name: string, kind: "miss" | "plan" = "miss"): string | null {
+  const digits = (phone ?? "").replace(/\D/g, "")
+  if (digits.length < 10) return null
   const full = digits.startsWith("55") && digits.length > 11 ? digits : `55${digits}`
   const firstName = name.trim().split(/\s+/)[0] ?? name
   const text =
@@ -75,4 +76,31 @@ export function whatsappLink(phone: string, name: string, kind: "miss" | "plan" 
       ? `Oi ${firstName}! Tudo bem? Passando para lembrar que seu plano da academia está vencendo. Quer renovar? 💪`
       : `Oi ${firstName}! Sentimos sua falta na academia 💪 Está tudo bem? Bora voltar a treinar essa semana?`
   return `https://wa.me/${full}?text=${encodeURIComponent(text)}`
+}
+
+export const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  CASH: "Dinheiro",
+  PIX: "Pix",
+  CREDIT_CARD: "Cartão de crédito",
+  DEBIT_CARD: "Cartão de débito",
+  TRANSFER: "Transferência",
+  OTHER: "Outro",
+}
+
+export const ACCESS_METHOD_LABEL: Record<string, string> = {
+  MANUAL: "Recepção",
+  PASSWORD: "Senha",
+  FINGERPRINT: "Digital",
+  CARD: "Cartão",
+}
+
+export function formatMoney(value: number): string {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
+}
+
+export function planDurationLabel(months: number, days: number): string {
+  const parts: string[] = []
+  if (months > 0) parts.push(`${months} ${months === 1 ? "mês" : "meses"}`)
+  if (days > 0) parts.push(`${days} ${days === 1 ? "dia" : "dias"}`)
+  return parts.join(" e ") || "—"
 }

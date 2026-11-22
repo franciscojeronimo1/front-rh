@@ -113,10 +113,10 @@ export default function AvisosPage() {
                   <div className="min-w-0 flex-1">
                     <NotificationItem notification={n} onClick={() => markOne(n)} />
                   </div>
-                  {n.client?.phone && (n.type === "MEMBER_AT_RISK" || n.type === "PLAN_EXPIRING" || n.type === "PLAN_EXPIRED") && (
+                  {n.member?.phone && whatsappLink(n.member.phone, n.member.name) && (n.type === "MEMBER_AT_RISK" || n.type === "PLAN_EXPIRING" || n.type === "PLAN_EXPIRED") && (
                     <Button asChild variant="ghost" size="icon" className="mt-3 shrink-0 text-emerald-700" title="Chamar no WhatsApp">
                       <a
-                        href={whatsappLink(n.client.phone, n.client.name, n.type === "MEMBER_AT_RISK" ? "miss" : "plan")}
+                        href={whatsappLink(n.member.phone, n.member.name, n.type === "MEMBER_AT_RISK" ? "miss" : "plan") ?? undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => markOne(n)}

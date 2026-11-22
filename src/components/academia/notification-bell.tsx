@@ -16,7 +16,7 @@ import {
   markNotificationRead,
   type GymNotification,
 } from "@/lib/api"
-import { useGymModule } from "@/hooks/useGymModule"
+import { useBusinessType } from "@/hooks/useBusinessType"
 import { NotificationItem } from "./notification-item"
 
 const POLL_MS = 60_000
@@ -24,7 +24,7 @@ export const NOTIFICATIONS_CHANGED_EVENT = "gym-notifications-changed"
 
 /** Sino de avisos da academia (contador de não lidos + últimos avisos). */
 export function NotificationBell({ className }: { className?: string }) {
-  const { enabled } = useGymModule()
+  const { isGym: enabled } = useBusinessType()
   const [unread, setUnread] = useState(0)
   const [items, setItems] = useState<GymNotification[]>([])
   const [open, setOpen] = useState(false)
