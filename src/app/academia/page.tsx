@@ -165,7 +165,7 @@ export default function AcademiaPainelPage() {
           actions={
             <>
               <Button asChild variant="outline">
-                <Link href="/clientes/novo">
+                <Link href="/academia/alunos?novo=1">
                   <UserPlus className="mr-2 h-4 w-4" /> Novo aluno
                 </Link>
               </Button>

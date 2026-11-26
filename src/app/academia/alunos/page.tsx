@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useCallback, useEffect, useState } from "react"
+import { Suspense, useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
@@ -106,7 +106,10 @@ function AlunosContent() {
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState(q)
   const [planFor, setPlanFor] = useState<GymMember | null>(null)
-  const [creating, setCreating] = useState(searchParams.get("novo") === "1")
+  const [creatingState, setCreatingState] = useState(false)
+  // "?novo=1" (vindo do painel ou da tela de presença) abre o cadastro mesmo se a página já estiver montada
+  const novoParam = searchParams.get("novo") === "1"
+  const creating = creatingState || novoParam
 
   const setUrl = useCallback(
     (u: { status?: MemberFilter; page?: number; q?: string }) => {
@@ -121,6 +124,16 @@ function AlunosContent() {
       router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false })
     },
     [router, pathname, status, page, q]
+  )
+
+  const navigatingToNew = useRef(false)
+  const setCreating = useCallback(
+    (open: boolean) => {
+      setCreatingState(open)
+      // Ao fechar sem salvar, tira o "?novo=1" da URL (se salvou, já está indo pra ficha do aluno)
+      if (!open && novoParam && !navigatingToNew.current) setUrl({})
+    },
+    [novoParam, setUrl]
   )
 
   const load = useCallback(async () => {
@@ -378,7 +391,10 @@ function AlunosContent() {
       <MemberFormDialog
         open={creating}
         onOpenChange={setCreating}
-        onSaved={(m) => router.push(`/academia/alunos/${m.id}`)}
+        onSaved={(m) => {
+          navigatingToNew.current = true
+          router.push(`/academia/alunos/${m.id}`)
+        }}
       />
     </div>
   )
