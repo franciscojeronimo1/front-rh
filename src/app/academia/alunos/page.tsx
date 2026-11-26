@@ -14,6 +14,7 @@ import {
   RotateCcw,
   Search,
   UserCheck,
+  Upload,
   UserPlus,
   UserX,
 } from "lucide-react"
@@ -238,9 +239,18 @@ function AlunosContent() {
           title="Alunos"
           subtitle="Status atualizado automaticamente pela frequência de cada aluno."
           actions={
-            <Button onClick={() => setCreating(true)}>
-              <UserPlus className="mr-2 h-4 w-4" /> Novo aluno
-            </Button>
+            <>
+              {isAdmin && (
+                <Button asChild variant="outline">
+                  <Link href="/academia/alunos/importar">
+                    <Upload className="mr-2 h-4 w-4" /> Importar
+                  </Link>
+                </Button>
+              )}
+              <Button onClick={() => setCreating(true)}>
+                <UserPlus className="mr-2 h-4 w-4" /> Novo aluno
+              </Button>
+            </>
           }
         />
 

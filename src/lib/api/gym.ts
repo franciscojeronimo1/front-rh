@@ -348,3 +348,103 @@ export function cancelGymPayment(paymentId: string) {
     authenticatedFetch(`/gym/payments/${paymentId}/cancel`, { method: "POST" })
   )
 }
+
+/* ------------------------------ Importação de alunos ------------------------------ */
+
+export type ImportField =
+  | "name"
+  | "cpf"
+  | "phone"
+  | "phone2"
+  | "email"
+  | "birthDate"
+  | "accessCode"
+  | "externalCode"
+  | "rg"
+  | "gender"
+  | "address"
+  | "district"
+  | "city"
+  | "state"
+  | "zip"
+  | "status"
+  | "planName"
+  | "planPrice"
+  | "planStart"
+  | "memberSince"
+  | "planEnd"
+  | "notes"
+
+export type ImportMapping = Partial<Record<ImportField, number | null>>
+
+export interface ImportRequest {
+  file: string
+  fileName?: string
+  headerRow?: number
+  mapping?: ImportMapping
+  duplicates?: "skip" | "update"
+  createPlans?: boolean
+  importInactive?: boolean
+}
+
+export type ImportRowAction = "create" | "update" | "skip" | "error"
+
+export interface ImportPreviewRow {
+  line: number
+  action: ImportRowAction
+  errors: string[]
+  warnings: string[]
+  existingMemberId?: string
+  data: {
+    name: string
+    cpf: string | null
+    phone: string | null
+    email: string | null
+    birthDate: string | null
+    accessCode: string | null
+    status: "ACTIVE" | "INACTIVE"
+    planName: string | null
+    planPrice: number | null
+    planStart: string | null
+    planEnd: string | null
+    notes: string | null
+  }
+}
+
+export interface ImportPreview {
+  file: { format: "csv" | "xlsx" | "xls"; encoding: string | null; delimiter: string | null; sheetName: string | null; totalLines: number }
+  headerRow: number
+  columns: { index: number; header: string; samples: string[] }[]
+  mapping: ImportMapping
+  fields: { key: ImportField; label: string; required: boolean }[]
+  options: { duplicates: "skip" | "update"; createPlans: boolean; importInactive: boolean }
+  summary: { total: number; create: number; update: number; skip: number; error: number; withWarnings: number; withPlan: number }
+  rows: ImportPreviewRow[]
+}
+
+export interface ImportResult {
+  message: string
+  summary: {
+    total: number
+    created: number
+    updated: number
+    skipped: number
+    errors: number
+    failed: number
+    memberships: number
+    plansCreated: string[]
+    importedOn: string
+  }
+  results: { line: number; action: ImportRowAction | "failed"; memberId?: string; name: string; message?: string }[]
+  rows: ImportPreviewRow[]
+}
+
+export function previewMemberImport(data: ImportRequest) {
+  return json<ImportPreview>(
+    authenticatedFetch("/gym/members/import/preview", { method: "POST", body: JSON.stringify(data) })
+  )
+}
+
+export function importMembers(data: ImportRequest) {
+  return json<ImportResult>(authenticatedFetch("/gym/members/import", { method: "POST", body: JSON.stringify(data) }))
+}
