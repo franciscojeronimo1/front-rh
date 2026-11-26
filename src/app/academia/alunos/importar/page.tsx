@@ -12,9 +12,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { AcademiaPageHeader } from "@/components/academia/academia-page-header"
 import { useIsAdmin } from "@/hooks/useIsAdmin"
 import {
+  getMembershipPlans,
   importMembers,
   previewMemberImport,
   type ImportField,
@@ -51,6 +53,10 @@ function fileToBase64(f: File): Promise<string> {
   })
 }
 
+/** Mesmo critério do backend para reconhecer um plano pelo nome (sem acento/maiúsculas). */
+const planKey = (name: string) =>
+  name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()
+
 const ymdBR = (ymd: string | null) => (ymd ? ymd.split("-").reverse().join("/") : "—")
 const cpfMask = (c: string | null) => (c ? c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : "—")
 const phoneMask = (p: string | null) =>
@@ -68,6 +74,8 @@ export default function ImportarAlunosPage() {
   const [error, setError] = useState("")
   const [filter, setFilter] = useState<"all" | "problems">("all")
   const [showAllFields, setShowAllFields] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [existingPlans, setExistingPlans] = useState<string[] | null>(null)
 
   const runPreview = async (f: { name: string; base64: string }, req: Omit<ImportRequest, "file" | "fileName">) => {
     setLoading(true)
@@ -121,23 +129,37 @@ export default function ImportarAlunosPage() {
     change({ mapping })
   }
 
+  const openConfirm = async () => {
+    if (!preview) return
+    setConfirmOpen(true)
+    // Planos que já existem, para mostrar quais a importação vai criar
+    if (request.createPlans !== false && existingPlans === null) {
+      try {
+        const { plans } = await getMembershipPlans()
+        setExistingPlans(plans.map((p) => planKey(p.name)))
+      } catch {
+        setExistingPlans([])
+      }
+    }
+  }
+
   const doImport = async () => {
     if (!file || !preview) return
-    const n = preview.summary.create + preview.summary.update
-    if (!window.confirm(`Importar agora? ${preview.summary.create} aluno(s) novo(s)${preview.summary.update ? ` e ${preview.summary.update} atualização(ões)` : ""}. Linhas com erro não serão importadas.`)) return
     setImporting(true)
     setError("")
     try {
       const res = await importMembers({ file: file.base64, fileName: file.name, ...request })
       setResult(res)
       setPreview(null)
+      setConfirmOpen(false)
+      setExistingPlans(null)
       toast.success(res.message)
     } catch (err) {
+      setConfirmOpen(false)
       setError(err instanceof Error ? err.message : "Erro ao importar")
     } finally {
       setImporting(false)
     }
-    return n
   }
 
   const reset = () => {
@@ -172,6 +194,18 @@ export default function ImportarAlunosPage() {
   }
 
   const toImport = preview ? preview.summary.create + preview.summary.update : 0
+  const plansToCreate =
+    preview && request.createPlans !== false && existingPlans !== null
+      ? Array.from(
+          new Map(
+            preview.rows
+              .filter((r) => (r.action === "create" || r.action === "update") && r.data.planName && r.data.planEnd)
+              .map((r) => [planKey(r.data.planName!), r.data.planName!])
+          ).entries()
+        )
+          .filter(([k]) => !existingPlans.includes(k))
+          .map(([, name]) => name)
+      : []
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -413,8 +447,7 @@ export default function ImportarAlunosPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <Button onClick={() => void doImport()} disabled={importing || loading || toImport === 0} data-testid="import-confirm">
-                  {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button onClick={() => void openConfirm()} disabled={importing || loading || toImport === 0} data-testid="import-confirm">
                   Importar {toImport} aluno{toImport === 1 ? "" : "s"}
                 </Button>
                 <Button variant="outline" onClick={reset} disabled={importing}>
@@ -426,6 +459,70 @@ export default function ImportarAlunosPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {preview && (
+          <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            title="Confirmar importação"
+            description="Confira o resumo antes de gravar. Depois de importados, os alunos aparecem na lista de Alunos."
+            confirmLabel={importing ? "Importando..." : `Importar ${toImport} aluno${toImport === 1 ? "" : "s"}`}
+            onConfirm={doImport}
+            loading={importing}
+          >
+            <ul className="space-y-1.5 text-sm" data-testid="confirm-summary">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                <span>
+                  <b>{preview.summary.create}</b> aluno{preview.summary.create === 1 ? "" : "s"} novo{preview.summary.create === 1 ? "" : "s"}
+                </span>
+              </li>
+              {preview.summary.update > 0 && (
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-sky-600" />
+                  <span>
+                    <b>{preview.summary.update}</b> aluno{preview.summary.update === 1 ? "" : "s"} já cadastrado{preview.summary.update === 1 ? "" : "s"} será
+                    {preview.summary.update === 1 ? "" : "ão"} atualizado{preview.summary.update === 1 ? "" : "s"}
+                  </span>
+                </li>
+              )}
+              {preview.summary.skip > 0 && (
+                <li className="flex items-center gap-2 text-muted-foreground">
+                  <span className="inline-block h-4 w-4 text-center">–</span>
+                  <span>
+                    {preview.summary.skip} linha{preview.summary.skip === 1 ? "" : "s"} pulada{preview.summary.skip === 1 ? "" : "s"}
+                  </span>
+                </li>
+              )}
+              {preview.summary.error > 0 && (
+                <li className="flex items-center gap-2 text-red-600">
+                  <XCircle className="h-4 w-4" />
+                  <span>
+                    <b>{preview.summary.error}</b> linha{preview.summary.error === 1 ? "" : "s"} com erro não ser
+                    {preview.summary.error === 1 ? "á" : "ão"} importada{preview.summary.error === 1 ? "" : "s"}
+                  </span>
+                </li>
+              )}
+              {request.createPlans !== false && (
+                <li className="flex items-start gap-2">
+                  <FileSpreadsheet className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span>
+                    {existingPlans === null ? (
+                      <span className="text-muted-foreground">Verificando planos...</span>
+                    ) : plansToCreate.length ? (
+                      <>
+                        Plano{plansToCreate.length === 1 ? "" : "s"} que ser{plansToCreate.length === 1 ? "á" : "ão"} criado{plansToCreate.length === 1 ? "" : "s"}:{" "}
+                        <b>{plansToCreate.join(", ")}</b>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">Nenhum plano novo será criado</span>
+                    )}
+                  </span>
+                </li>
+              )}
+            </ul>
+          </ConfirmDialog>
         )}
 
         {/* 4. Resultado */}

@@ -20,6 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,6 +97,16 @@ export default function AlunoDetalhePage() {
     const t = setTimeout(() => void load(), 0)
     return () => clearTimeout(t)
   }, [load])
+
+  const [confirm, setConfirm] = useState<{ title: string; description: string; label: string; ok: string; fn: () => Promise<unknown> } | null>(null)
+  const [confirming, setConfirming] = useState(false)
+  const runConfirmed = async () => {
+    if (!confirm) return
+    setConfirming(true)
+    await run(confirm.fn, confirm.ok)
+    setConfirming(false)
+    setConfirm(null)
+  }
 
   const run = async (fn: () => Promise<unknown>, ok: string) => {
     try {
@@ -231,7 +242,15 @@ export default function AlunoDetalhePage() {
                           variant="ghost"
                           size="sm"
                           className="text-muted-foreground"
-                          onClick={() => window.confirm("Cancelar esta matrícula?") && run(() => cancelMembership(ms.id), "Matrícula cancelada")}
+                          onClick={() =>
+                            setConfirm({
+                              title: "Cancelar matrícula",
+                              description: `A matrícula ${ms.planName} será cancelada e as mensalidades em aberto dela também.`,
+                              label: "Cancelar matrícula",
+                              ok: "Matrícula cancelada",
+                              fn: () => cancelMembership(ms.id),
+                            })
+                          }
                         >
                           <X className="mr-1 h-4 w-4" /> Cancelar
                         </Button>
@@ -289,7 +308,15 @@ export default function AlunoDetalhePage() {
                           variant="ghost"
                           size="sm"
                           className="text-muted-foreground"
-                          onClick={() => window.confirm("Cancelar esta mensalidade?") && run(() => cancelGymPayment(p.id), "Mensalidade cancelada")}
+                          onClick={() =>
+                            setConfirm({
+                              title: "Cancelar mensalidade",
+                              description: "Esta mensalidade será marcada como cancelada.",
+                              label: "Cancelar mensalidade",
+                              ok: "Mensalidade cancelada",
+                              fn: () => cancelGymPayment(p.id),
+                            })
+                          }
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -330,6 +357,17 @@ export default function AlunoDetalhePage() {
 
       <MemberFormDialog member={member} open={editOpen} onOpenChange={setEditOpen} onSaved={() => void load()} />
       <MembershipDialog member={member} open={planOpen} onOpenChange={setPlanOpen} onSaved={() => void load()} />
+      <ConfirmDialog
+        open={confirm !== null}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title={confirm?.title ?? ""}
+        description={confirm?.description}
+        cancelLabel="Voltar"
+        confirmLabel={confirm?.label ?? "Confirmar"}
+        onConfirm={runConfirmed}
+        loading={confirming}
+        destructive
+      />
     </div>
   )
 }
