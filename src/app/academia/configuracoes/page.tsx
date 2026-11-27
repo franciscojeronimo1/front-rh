@@ -12,6 +12,7 @@ import { ActiveToggle } from "@/components/ui/active-toggle"
 import { getGymSettings, updateGymSettings, type GymSettings } from "@/lib/api"
 import { useIsAdmin } from "@/hooks/useIsAdmin"
 import { AcademiaPageHeader } from "@/components/academia/academia-page-header"
+import { MercadoPagoCard } from "@/components/academia/mercado-pago-card"
 import { formatRelative } from "@/lib/academia/format"
 
 type Form = Omit<GymSettings, "id" | "organizationId" | "lastEvaluatedAt">
@@ -255,6 +256,8 @@ export default function ConfiguracoesAcademiaPage() {
             />
           </CardContent>
         </Card>
+
+        {isAdmin && <MercadoPagoCard />}
       </div>
     </div>
   )

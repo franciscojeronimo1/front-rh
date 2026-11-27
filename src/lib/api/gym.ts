@@ -516,3 +516,35 @@ export function previewMemberImport(data: ImportRequest) {
 export function importMembers(data: ImportRequest) {
   return json<ImportResult>(authenticatedFetch("/gym/members/import", { method: "POST", body: JSON.stringify(data) }))
 }
+
+export interface MercadoPagoStatus {
+  /** O servidor tem a aplicação do Mercado Pago configurada (dá para conectar). */
+  available: boolean
+  connected: boolean
+  /** Sem conta conectada, o Pix usa o token global de teste do servidor. */
+  testMode: boolean
+  pixEnabled: boolean
+  needsReconnect: boolean
+  account: {
+    userId: string | null
+    nickname: string | null
+    email: string | null
+    liveMode: boolean | null
+    connectedAt: string | null
+    expiresAt: string | null
+    lastError: string | null
+  } | null
+}
+
+export function getMercadoPagoStatus() {
+  return json<MercadoPagoStatus>(authenticatedFetch("/gym/mercadopago"))
+}
+
+/** Devolve a URL do Mercado Pago para o dono autorizar (o navegador vai para lá). */
+export function startMercadoPagoConnect() {
+  return json<{ url: string }>(authenticatedFetch("/gym/mercadopago/authorize", { method: "POST" }))
+}
+
+export function disconnectMercadoPago() {
+  return json<{ message: string }>(authenticatedFetch("/gym/mercadopago/disconnect", { method: "POST" }))
+}

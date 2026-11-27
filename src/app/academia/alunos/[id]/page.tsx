@@ -271,6 +271,15 @@ export default function AlunoDetalhePage() {
           <Card className="rounded-2xl shadow-sm lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-lg">Mensalidades</CardTitle>
+              {isAdmin && !pixEnabled && payments.some((p) => p.status === "PENDING") && (
+                <CardDescription data-testid="pix-connect-hint">
+                  Quer cobrar por Pix?{" "}
+                  <Link href="/academia/configuracoes#pix" className="font-medium text-primary underline-offset-2 hover:underline">
+                    Conecte o Mercado Pago da academia
+                  </Link>
+                  .
+                </CardDescription>
+              )}
             </CardHeader>
             <CardContent>
               {payments.length === 0 ? (
@@ -299,7 +308,7 @@ export default function AlunoDetalhePage() {
                           variant="outline"
                           className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                           disabled={!pixEnabled}
-                          title={pixEnabled ? "Gerar QR Code e copia-e-cola" : "Cobrança por Pix ainda não configurada (Mercado Pago)"}
+                          title={pixEnabled ? "Gerar QR Code e copia-e-cola" : "Conecte o Mercado Pago da academia em Regras automáticas › Recebimento por Pix"}
                           onClick={() => setPixPayment(p)}
                           data-testid="pix-charge-button"
                         >
