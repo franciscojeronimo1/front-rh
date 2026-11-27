@@ -8,6 +8,8 @@ import {
   AlertTriangle,
   CalendarClock,
   CheckCircle2,
+  CircleDollarSign,
+  Clock,
   Loader2,
   MessageCircle,
   RefreshCw,
@@ -16,6 +18,7 @@ import {
   UserCheck,
   UserPlus,
   UserX,
+  Wallet,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -31,7 +34,8 @@ import { useIsAdmin } from "@/hooks/useIsAdmin"
 import { AcademiaPageHeader } from "@/components/academia/academia-page-header"
 import { NotificationItem } from "@/components/academia/notification-item"
 import { NOTIFICATIONS_CHANGED_EVENT } from "@/components/academia/notification-bell"
-import { formatDateBR, formatRelative, lastCheckInLabel, whatsappLink } from "@/lib/academia/format"
+import { DebtorsCard, MonthlyChartCard } from "@/components/academia/owner-dashboard"
+import { formatDateBR, formatMoney, formatRelative, lastCheckInLabel, whatsappLink } from "@/lib/academia/format"
 import { cn } from "@/lib/utils"
 
 const WEEKDAY = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
@@ -45,7 +49,7 @@ function Kpi({
   href,
 }: {
   label: string
-  value: number
+  value: number | string
   caption: string
   icon: typeof Activity
   tone: "emerald" | "amber" | "slate" | "blue" | "red"
@@ -154,6 +158,7 @@ export default function AcademiaPainelPage() {
 
   if (!data) return null
   const t = data.totals
+  const f = data.finance
   const maxDay = Math.max(1, ...data.checkInsByDay.map((d) => d.count))
 
   return (
@@ -161,7 +166,7 @@ export default function AcademiaPainelPage() {
       <div className="mx-auto max-w-7xl space-y-6">
         <AcademiaPageHeader
           title="Painel da academia"
-          subtitle="O sistema acompanha seus alunos sozinho. Você só age quando aparecer um aviso."
+          subtitle={f ? "Visão do dono: alunos, dinheiro do mês e quem precisa de atenção." : "O sistema acompanha seus alunos sozinho. Você só age quando aparecer um aviso."}
           actions={
             <>
               <Button asChild variant="outline">
@@ -181,11 +186,19 @@ export default function AcademiaPainelPage() {
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Kpi label="Alunos ativos" value={t.active} caption="Treinando normalmente" icon={Activity} tone="emerald" href="/academia/alunos?status=ACTIVE" />
           <Kpi label="Em risco" value={t.atRisk} caption={`${data.rules.atRiskAfterDays}+ dias sem treinar`} icon={AlertTriangle} tone="amber" href="/academia/alunos?status=AT_RISK" />
-          <Kpi label="Desativados no mês" value={t.deactivatedThisMonth} caption={`${t.inactive} inativos no total`} icon={UserX} tone="slate" href="/academia/alunos?status=INACTIVE" />
-          <Kpi label="Presenças hoje" value={t.checkInsToday} caption={`${t.checkInsWeek} nos últimos 7 dias`} icon={UserCheck} tone="blue" href="/academia/checkin" />
+          <Kpi label="Inativos" value={t.inactive} caption={`${t.deactivatedThisMonth} desativado(s) este mês`} icon={UserX} tone="slate" href="/academia/alunos?status=INACTIVE" />
+          <Kpi label="Novos no mês" value={t.newThisMonth} caption={`${t.checkInsToday} presença(s) hoje`} icon={UserPlus} tone="blue" href="/academia/alunos" />
         </div>
 
-        {(t.plansExpiringSoon > 0 || t.plansExpired > 0 || t.paymentsOverdue > 0) && (
+        {f && (
+          <div className="grid gap-4 sm:grid-cols-3" data-testid="finance-kpis">
+            <Kpi label="Receita do mês" value={formatMoney(f.revenueThisMonth)} caption={`${f.paymentsPaidThisMonth} mensalidade(s) paga(s)`} icon={CircleDollarSign} tone="emerald" />
+            <Kpi label="A receber" value={formatMoney(f.openAmount)} caption={`${f.openCount} mensalidade(s) a vencer`} icon={Wallet} tone="blue" />
+            <Kpi label="Em atraso" value={formatMoney(f.overdueAmount)} caption={f.overdueCount ? `${f.overdueCount} mensalidade(s) de ${f.debtorsCount} aluno(s)` : "Nada vencido"} icon={Clock} tone={f.overdueAmount > 0 ? "red" : "slate"} />
+          </div>
+        )}
+
+        {(t.plansExpiringSoon > 0 || t.plansExpired > 0 || (t.paymentsOverdue > 0 && !f)) && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {t.plansExpiringSoon > 0 && (
               <Link href="/academia/alunos?status=PLAN_EXPIRING" className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 hover:bg-blue-100">
@@ -199,12 +212,19 @@ export default function AcademiaPainelPage() {
                 <span><strong>{t.plansExpired}</strong> aluno(s) ativo(s) com plano vencido</span>
               </Link>
             )}
-            {t.paymentsOverdue > 0 && (
+            {t.paymentsOverdue > 0 && !f && (
               <Link href="/academia/alunos" className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 hover:bg-amber-100">
                 <CalendarClock className="h-5 w-5 shrink-0" />
                 <span><strong>{t.paymentsOverdue}</strong> mensalidade(s) atrasada(s)</span>
               </Link>
             )}
+          </div>
+        )}
+
+        {f && (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <DebtorsCard finance={f} />
+            <MonthlyChartCard finance={f} />
           </div>
         )}
 
@@ -255,7 +275,7 @@ export default function AcademiaPainelPage() {
             <Card className="rounded-2xl shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg">Frequência da semana</CardTitle>
-                <CardDescription>Presenças por dia</CardDescription>
+                <CardDescription>Presenças por dia · {t.checkInsToday} hoje</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex h-36 items-end gap-2">

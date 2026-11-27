@@ -77,6 +77,7 @@ export interface GymDashboard {
     atRisk: number
     inactive: number
     deactivatedThisMonth: number
+    newThisMonth: number
     checkInsToday: number
     checkInsWeek: number
     plansExpiringSoon: number
@@ -87,6 +88,40 @@ export interface GymDashboard {
   checkInsByDay: { date: string; count: number }[]
   atRiskMembers: GymMember[]
   recentNotifications: GymNotification[]
+  /** Só vem para administradores (dono). */
+  finance: GymDashboardFinance | null
+}
+
+export interface GymDebtor {
+  memberId: string
+  name: string
+  phone: string | null
+  memberStatus: MemberStatus
+  amount: number
+  payments: number
+  oldestDueDate: string
+  daysLate: number
+}
+
+export interface GymMonthlyPoint {
+  month: string
+  label: string
+  revenue: number
+  paymentsPaid: number
+  newMembers: number
+  deactivated: number
+}
+
+export interface GymDashboardFinance {
+  revenueThisMonth: number
+  paymentsPaidThisMonth: number
+  openAmount: number
+  openCount: number
+  overdueAmount: number
+  overdueCount: number
+  debtorsCount: number
+  debtors: GymDebtor[]
+  monthly: GymMonthlyPoint[]
 }
 
 export interface GymCheckIn {
