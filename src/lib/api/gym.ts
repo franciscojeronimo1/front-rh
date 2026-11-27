@@ -13,6 +13,8 @@ export type GymNotificationType =
   | "MEMBER_REACTIVATED"
   | "PLAN_EXPIRING"
   | "PLAN_EXPIRED"
+  | "PAYMENT_RECEIVED"
+  | "PAYMENT_ISSUE"
 
 export interface GymSettings {
   id: string
@@ -174,6 +176,27 @@ export interface GymPayment {
   paidAt: string | null
   notes: string | null
   receivedBy?: { id: string; name: string } | null
+  /** Cobrança Pix (Mercado Pago): pending | approved | cancelled | ... */
+  pixStatus?: string | null
+  pixExpiresAt?: string | null
+}
+
+export interface GymPixCharge {
+  paymentId: string
+  paymentStatus: PaymentStatus
+  amount: number
+  dueDate: string
+  paidAt: string | null
+  reused?: boolean
+  enabled?: boolean
+  pix: {
+    id: string
+    status: string | null
+    qrCode: string | null
+    qrCodeBase64: string | null
+    ticketUrl: string | null
+    expiresAt: string | null
+  } | null
 }
 
 export interface MemberInput {
@@ -369,13 +392,23 @@ export function cancelMembership(membershipId: string) {
 }
 
 export function getMemberPayments(memberId: string) {
-  return json<{ payments: GymPayment[] }>(authenticatedFetch(`/gym/members/${memberId}/payments`))
+  return json<{ payments: GymPayment[]; pixEnabled?: boolean }>(authenticatedFetch(`/gym/members/${memberId}/payments`))
 }
 
 export function payGymPayment(paymentId: string, data: { method: PaymentMethod; amount?: number }) {
   return json<{ message: string; payment: GymPayment }>(
     authenticatedFetch(`/gym/payments/${paymentId}/pay`, { method: "POST", body: JSON.stringify(data) })
   )
+}
+
+/** Gera (ou reaproveita) a cobrança Pix de uma mensalidade pendente. */
+export function chargeGymPix(paymentId: string) {
+  return json<GymPixCharge>(authenticatedFetch(`/gym/payments/${paymentId}/pix`, { method: "POST" }))
+}
+
+/** Situação da cobrança Pix (o servidor confere no Mercado Pago se ainda estiver pendente). */
+export function getGymPixStatus(paymentId: string) {
+  return json<GymPixCharge>(authenticatedFetch(`/gym/payments/${paymentId}/pix`))
 }
 
 export function cancelGymPayment(paymentId: string) {

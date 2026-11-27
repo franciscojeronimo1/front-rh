@@ -11,6 +11,7 @@ import {
   KeyRound,
   MessageCircle,
   Pencil,
+  QrCode,
   RotateCcw,
   UserCheck,
   UserX,
@@ -46,6 +47,7 @@ import {
 import { MemberStatusBadge, ToneText } from "@/components/academia/member-status-badge"
 import { MemberFormDialog } from "@/components/academia/member-form-dialog"
 import { MembershipDialog } from "@/components/academia/membership-dialog"
+import { PixChargeDialog } from "@/components/academia/pix-charge-dialog"
 import { useIsAdmin } from "@/hooks/useIsAdmin"
 import {
   ACCESS_METHOD_LABEL,
@@ -56,6 +58,7 @@ import {
   PAYMENT_METHOD_LABEL,
   planLabel,
   whatsappLink,
+  isPastIso,
 } from "@/lib/academia/format"
 import { formatCpf, formatPhone } from "@/lib/schemas/client"
 
@@ -76,6 +79,8 @@ export default function AlunoDetalhePage() {
   const [checkIns, setCheckIns] = useState<RecentCheckIn[]>([])
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [payments, setPayments] = useState<GymPayment[]>([])
+  const [pixEnabled, setPixEnabled] = useState(false)
+  const [pixPayment, setPixPayment] = useState<GymPayment | null>(null)
   const [error, setError] = useState("")
   const [editOpen, setEditOpen] = useState(false)
   const [planOpen, setPlanOpen] = useState(false)
@@ -88,6 +93,7 @@ export default function AlunoDetalhePage() {
       setCheckIns(detail.recentCheckIns)
       setMemberships(ms.memberships)
       setPayments(ps.payments)
+      setPixEnabled(!!ps.pixEnabled)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar aluno")
     }
@@ -280,10 +286,26 @@ export default function AlunoDetalhePage() {
                         <p className="text-xs">
                           <ToneText tone={PAYMENT_STATUS[p.status].tone}>{PAYMENT_STATUS[p.status].label}</ToneText>
                           {p.status === "PAID" && p.paidAt
-                            ? ` em ${formatDateBR(p.paidAt)}${p.method ? ` · ${PAYMENT_METHOD_LABEL[p.method]}` : ""}${p.receivedBy ? ` · ${p.receivedBy.name}` : ""}`
+                            ? ` em ${formatDateBR(p.paidAt)}${p.method ? ` · ${PAYMENT_METHOD_LABEL[p.method]}` : ""}${p.receivedBy ? ` · ${p.receivedBy.name}` : ""}${p.method === "PIX" && !p.receivedBy && p.pixStatus === "approved" ? " · automático (Mercado Pago)" : ""}`
+                            : ""}
+                          {p.status === "PENDING" && p.pixStatus === "pending" && p.pixExpiresAt && !isPastIso(p.pixExpiresAt)
+                            ? ` · Pix enviado, válido até ${formatDateBR(p.pixExpiresAt)}`
                             : ""}
                         </p>
                       </div>
+                      {isAdmin && p.status === "PENDING" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                          disabled={!pixEnabled}
+                          title={pixEnabled ? "Gerar QR Code e copia-e-cola" : "Cobrança por Pix ainda não configurada (Mercado Pago)"}
+                          onClick={() => setPixPayment(p)}
+                          data-testid="pix-charge-button"
+                        >
+                          <QrCode className="mr-1 h-4 w-4" /> Cobrar via Pix
+                        </Button>
+                      )}
                       {p.status === "PENDING" && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -357,6 +379,19 @@ export default function AlunoDetalhePage() {
 
       <MemberFormDialog member={member} open={editOpen} onOpenChange={setEditOpen} onSaved={() => void load()} />
       <MembershipDialog member={member} open={planOpen} onOpenChange={setPlanOpen} onSaved={() => void load()} />
+      <PixChargeDialog
+        open={!!pixPayment}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPixPayment(null)
+            void load()
+          }
+        }}
+        payment={pixPayment}
+        member={{ name: member.name, phone: member.phone }}
+        onPaid={() => void load()}
+      />
+
       <ConfirmDialog
         open={confirm !== null}
         onOpenChange={(open) => !open && setConfirm(null)}

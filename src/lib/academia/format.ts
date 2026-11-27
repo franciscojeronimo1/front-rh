@@ -65,17 +65,24 @@ export function planLabel(member: Pick<GymMember, "planExpiresAt" | "daysToPlanE
   return { text: `Até ${formatDateBR(member.planExpiresAt)}`, tone: "ok" }
 }
 
+/** Link do WhatsApp com texto pronto (o dono só confirma o envio). Sem telefone válido, abre o WhatsApp para escolher o contato. */
+export function whatsappTextLink(phone: string | null | undefined, text: string): string {
+  const digits = (phone ?? "").replace(/\D/g, "")
+  if (digits.length < 10) return `https://wa.me/?text=${encodeURIComponent(text)}`
+  const full = digits.startsWith("55") && digits.length > 11 ? digits : `55${digits}`
+  return `https://wa.me/${full}?text=${encodeURIComponent(text)}`
+}
+
 /** Link para abrir conversa no WhatsApp com mensagem pronta (o dono só confirma o envio). */
 export function whatsappLink(phone: string | null | undefined, name: string, kind: "miss" | "plan" = "miss"): string | null {
   const digits = (phone ?? "").replace(/\D/g, "")
   if (digits.length < 10) return null
-  const full = digits.startsWith("55") && digits.length > 11 ? digits : `55${digits}`
   const firstName = name.trim().split(/\s+/)[0] ?? name
   const text =
     kind === "plan"
       ? `Oi ${firstName}! Tudo bem? Passando para lembrar que seu plano da academia está vencendo. Quer renovar? 💪`
       : `Oi ${firstName}! Sentimos sua falta na academia 💪 Está tudo bem? Bora voltar a treinar essa semana?`
-  return `https://wa.me/${full}?text=${encodeURIComponent(text)}`
+  return whatsappTextLink(phone, text)
 }
 
 export const PAYMENT_METHOD_LABEL: Record<string, string> = {
@@ -103,4 +110,9 @@ export function planDurationLabel(months: number, days: number): string {
   if (months > 0) parts.push(`${months} ${months === 1 ? "mês" : "meses"}`)
   if (days > 0) parts.push(`${days} ${days === 1 ? "dia" : "dias"}`)
   return parts.join(" e ") || "—"
+}
+
+/** true se a data/hora ISO já passou. */
+export function isPastIso(value: string | null | undefined): boolean {
+  return !!value && new Date(value).getTime() < Date.now()
 }

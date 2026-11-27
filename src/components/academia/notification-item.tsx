@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertTriangle, CalendarClock, CalendarX2, PartyPopper, UserX } from "lucide-react"
+import { AlertTriangle, BadgeCheck, CalendarClock, CalendarX2, CircleAlert, PartyPopper, UserX } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { GymNotification, GymNotificationType } from "@/lib/api"
 import { formatRelative } from "@/lib/academia/format"
@@ -11,6 +11,8 @@ const ICONS: Record<GymNotificationType, { icon: typeof AlertTriangle; className
   MEMBER_REACTIVATED: { icon: PartyPopper, className: "bg-emerald-100 text-emerald-700" },
   PLAN_EXPIRING: { icon: CalendarClock, className: "bg-blue-100 text-blue-700" },
   PLAN_EXPIRED: { icon: CalendarX2, className: "bg-red-100 text-red-700" },
+  PAYMENT_RECEIVED: { icon: BadgeCheck, className: "bg-emerald-100 text-emerald-700" },
+  PAYMENT_ISSUE: { icon: CircleAlert, className: "bg-red-100 text-red-700" },
 }
 
 export function NotificationItem({
